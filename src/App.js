@@ -23,8 +23,7 @@ export default function VideoDatingPlatform() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
 
-  const API_URL = 'http://localhost:3002/api';
-
+const API_URL = 'https://lustphere-real-1.onrender.com/api';
   // Poll for incoming calls (receiver only)
   useEffect(() => {
     if (isLoggedIn && userRole === 'receiver' && userId) {
