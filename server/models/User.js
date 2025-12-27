@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ['mpesa', 'paypal', 'card'], default: 'mpesa' },
   tokens: { type: Number, default: 0 },
   totalEarned: { type: Number, default: 0 },
-  emailVerified: { type: Boolean, default: false },
+  emailVerified: { type: Boolean, default: true },
   isOnline: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });

@@ -79,9 +79,7 @@ export const useAuth = (showNotification, fetchProfiles, fetchCallHistory, fetch
       
       const data = await response.json();
       
-      if (response.ok) {
-        //if (!data.user.emailVerified) {showNotification('Please verify your email before logging in', 'error');return { success: false, needsVerification: true };}
-        
+      if (response.ok) {        
         setUserId(data.user._id);
         setUserRole(data.user.role);
         setUserName(data.user.name);
