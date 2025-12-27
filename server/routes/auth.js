@@ -1,11 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+// ADD THIS AT THE TOP, right after const router = express.Router();
+router.get('/test', (req, res) => {
+  res.json({ message: 'Auth routes are working!' });
+});
 
+router.get('/test-db', async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    res.json({ message: 'Database connected', userCount: count });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 // Sign Up
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, nickname, email, password, role, age, tagline, location, picture, paymentMethod } = req.body;
 
     // Check if user exists
     let user = await User.findOne({ email });
@@ -16,28 +28,41 @@ router.post('/signup', async (req, res) => {
     // Create new user
     user = new User({
       name,
+      nickname,
       email,
       password,
-      role,
-      tokens: role === 'receiver' ? 0 : 100,
+      role, // accepts 'client' or 'model'
+      age,
+      tagline,
+      location,
+      picture,
+      paymentMethod,
+      tokens: role === 'client' ? 100 : 0,
+      totalEarned: role === 'model' ? 0 : undefined,
+      emailVerified: false,
     });
 
     await user.save();
 
-    // If receiver, automatically create their profile
-    if (role === 'receiver') {
+    // If model, create their profile
+    if (role === 'model') {
       const Profile = require('../models/Profile');
       const profile = new Profile({
         userId: user._id,
         name,
-        picture: '👩',
+        nickname,
+        picture: picture || '👩',
+        location,
+        tagline,
         verified: false,
+        isOnline: true,
       });
       await profile.save();
     }
 
     res.status(201).json({ message: 'User created successfully', user });
   } catch (error) {
+    console.error('Signup error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
@@ -55,7 +80,6 @@ router.post('/login', async (req, res) => {
     if (user.role !== role) {
       return res.status(400).json({ message: 'Invalid role for this account' });
     }
-
     user.isOnline = true;
     await user.save();
 
