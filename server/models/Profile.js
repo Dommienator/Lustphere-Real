@@ -8,7 +8,7 @@ const profileSchema = new mongoose.Schema({
   bodyShape: { type: String },
   personality: { type: String },
   interests: { type: String },
-  verified: { type: Boolean, default: false },
+  verified: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
 });
 
