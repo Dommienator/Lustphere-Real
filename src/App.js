@@ -287,6 +287,12 @@ useEffect(() => {
           user.videoTrack.play(remoteVideoRef.current);
         }
       });
+      // Listen for remote user leaving
+client.on('user-left', async (user) => {
+  showNotification('📞 Call ended by other party', 'success');
+  handleEndCall();
+});
+
     } catch (error) {
       showNotification('Failed to start call: ' + error.message, 'error');
       setActiveCall(null);
@@ -325,15 +331,26 @@ useEffect(() => {
   };
 
   const handleRejectCall = async () => {
-    if (!incomingCall) return;
-    await callAPI.end({ callId: incomingCall.id });
-    setIncomingCall(null);
-    showNotification('Call declined', 'success');
-  };
+  if (!incomingCall) return;
+  
+  // Notify backend
+  await callAPI.end({ callId: incomingCall.id });
+  
+  setIncomingCall(null);
+  showNotification('📵 Call declined', 'success');
+};
 
   const handleEndCall = async () => {
   try {
-    // Close tracks first
+    // Notify backend that call ended
+    if (activeCall) {
+      await callAPI.end({ 
+        callerId: auth.userId, 
+        receiverId: typeof activeCall.userId === 'object' ? activeCall.userId._id : activeCall.userId 
+      });
+    }
+    
+    // Close tracks
     if (localTrack) {
       if (localTrack.videoTrack) {
         localTrack.videoTrack.stop();
@@ -345,33 +362,34 @@ useEffect(() => {
       }
     }
     
-    // Leave Agora channel
     await client.leave();
     
-    // Clear all call-related state
+    // Calculate tokens/earnings
+    const tokensUsed = Math.ceil(callDuration / 30);
+    const amount = tokensUsed * TOKEN_TO_KSH;
+    
+    if (auth.userRole === 'model') {
+      auth.setTotalEarned(prev => prev + amount);
+      showNotification(`💰 Call ended! You earned KSh ${amount}`, 'success');
+    } else {
+      showNotification(`📞 Call ended! You spent ${tokensUsed} tokens (KSh ${amount})`, 'success');
+    }
+    
+    // Clear all state
     setActiveCall(null);
     setInCall(false);
     setLocalTrack(null);
     setCallDuration(0);
-    setIncomingCall(null); // CLEAR INCOMING CALL
-    
+    setIncomingCall(null);
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
       callTimerRef.current = null;
     }
     
-    // Calculate earnings for model
-    const tokensUsed = Math.ceil(callDuration / 30);
-    if (auth.userRole === 'model') {
-      const earnedKsh = tokensUsed * TOKEN_TO_KSH;
-      auth.setTotalEarned(prev => prev + earnedKsh);
-      showNotification(`💰 Earned KSh ${earnedKsh}!`, 'success');
-    }
-    
     fetchCallHistory(auth.userId);
   } catch (error) { 
-    console.error('Error ending call:', error); 
-    // Force cleanup even on error
+    console.error('Error ending call:', error);
+    // Force cleanup
     setActiveCall(null);
     setInCall(false);
     setLocalTrack(null);
