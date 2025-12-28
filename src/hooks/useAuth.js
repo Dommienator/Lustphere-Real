@@ -87,6 +87,17 @@ export const useAuth = (showNotification, fetchProfiles, fetchCallHistory, fetch
         setUserTokens(data.user.tokens || 100);
         setTotalEarned(data.user.totalEarned || 0);
         setIsLoggedIn(true);
+        setIsLoggedIn(true);
+
+// Save to localStorage
+localStorage.setItem('user', JSON.stringify({
+  userId: data.user._id,
+  role: data.user.role,
+  name: data.user.name,
+  nickname: data.user.nickname,
+  tokens: data.user.tokens || 100,
+  totalEarned: data.user.totalEarned || 0,
+}));
         
         showNotification(`💜 Welcome back, ${data.user.nickname || data.user.name}!`, 'success');
         fetchProfiles();
@@ -110,6 +121,7 @@ export const useAuth = (showNotification, fetchProfiles, fetchCallHistory, fetch
     setUserRole(null);
     setUserName('');
     setUserNickname('');
+    localStorage.removeItem('user');
   };
 
   const verifyEmail = async (email, code) => {

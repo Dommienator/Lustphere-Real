@@ -11,5 +11,4 @@ const profileSchema = new mongoose.Schema({
   verified: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
 });
-
 module.exports = mongoose.model('Profile', profileSchema);

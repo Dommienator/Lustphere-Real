@@ -1,5 +1,5 @@
-import React from 'react';
-import { Upload } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Eye, EyeOff } from 'lucide-react';
 
 export const AuthModal = ({ 
   show, 
@@ -12,6 +12,9 @@ export const AuthModal = ({
   onLogin,
   handlePictureUpload 
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   if (!show) return null;
   
   return (
@@ -60,27 +63,112 @@ export const AuthModal = ({
                   
                   <input type="text" placeholder="Tagline (optional)" value={form.tagline} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" />
                   
-                  <input type="password" placeholder="Password (8+ chars, 1 uppercase, 1 number, 1 special) *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="Password (8+ chars, 1 uppercase, 1 number, 1 special) *" 
+                      value={form.password} 
+                      onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                      autoComplete="new-password"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                   
-                  <input type="password" placeholder="Enter password again *" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+                  <div className="relative">
+                    <input 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="Enter password again *" 
+                      value={form.confirmPassword} 
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} 
+                      autoComplete="new-password"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </>
               )}
               {form.role === 'client' && (
                 <>
                   <input type="text" placeholder="Nickname *" value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
                   
-                  <input type="password" placeholder="Password (8+ chars, 1 uppercase, 1 number, 1 special) *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="Password (8+ chars, 1 uppercase, 1 number, 1 special) *" 
+                      value={form.password} 
+                      onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                      autoComplete="new-password"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                   
-                  <input type="password" placeholder="Enter password again *" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+                  <div className="relative">
+                    <input 
+                      type={showConfirmPassword ? "text" : "password"} 
+                      placeholder="Enter password again *" 
+                      value={form.confirmPassword} 
+                      onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} 
+                      autoComplete="new-password"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" 
+                      required 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </>
               )}
             </>
           )}
           
-          <input type="email" placeholder="Email *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+          <input type="email" placeholder="Email *" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
           
           {authMode === 'login' && (
-            <input type="password" placeholder="Password *" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" required />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password *" 
+                value={form.password} 
+                onChange={(e) => setForm({ ...form, password: e.target.value })} 
+                autoComplete="current-password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400" 
+                required 
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)} 
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           )}
           
           <label className="flex items-start gap-3 text-sm text-gray-700 cursor-pointer">

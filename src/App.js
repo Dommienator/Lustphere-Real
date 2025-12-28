@@ -133,6 +133,20 @@ export default function VideoDatingPlatform() {
     }
     return () => { if (callTimerRef.current) clearInterval(callTimerRef.current); };
   }, [inCall, auth.userRole, auth.userTokens]);
+  // Persist login on refresh
+useEffect(() => {
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    const userData = JSON.parse(savedUser);
+    auth.setUserId(userData.userId);
+    auth.setUserRole(userData.role);
+    auth.setUserName(userData.name);
+    auth.setUserNickname(userData.nickname);
+    auth.setUserTokens(userData.tokens);
+    auth.setTotalEarned(userData.totalEarned);
+    auth.setIsLoggedIn(true);
+  }
+}, []);
 
   // Handlers
   const handlePictureUpload = (e) => {
@@ -317,29 +331,52 @@ export default function VideoDatingPlatform() {
   };
 
   const handleEndCall = async () => {
-    try {
-      if (localTrack) {
-        localTrack.videoTrack?.close();
-        localTrack.audioTrack?.close();
+  try {
+    // Close tracks first
+    if (localTrack) {
+      if (localTrack.videoTrack) {
+        localTrack.videoTrack.stop();
+        localTrack.videoTrack.close();
       }
-      await client.leave();
-      
-      const tokensUsed = Math.ceil(callDuration / 30);
-      if (auth.userRole === 'model') {
-        const earnedKsh = tokensUsed * TOKEN_TO_KSH;
-        auth.setTotalEarned(prev => prev + earnedKsh);
-        showNotification(`💰 Earned KSh ${earnedKsh}!`, 'success');
+      if (localTrack.audioTrack) {
+        localTrack.audioTrack.stop();
+        localTrack.audioTrack.close();
       }
-
-      setActiveCall(null);
-      setInCall(false);
-      setLocalTrack(null);
-      setCallDuration(0);
-      if (callTimerRef.current) clearInterval(callTimerRef.current);
-      fetchCallHistory(auth.userId);
-    } catch (error) { console.error('Error ending call:', error); }
-  };
-
+    }
+    
+    // Leave Agora channel
+    await client.leave();
+    
+    // Clear all call-related state
+    setActiveCall(null);
+    setInCall(false);
+    setLocalTrack(null);
+    setCallDuration(0);
+    setIncomingCall(null); // CLEAR INCOMING CALL
+    
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+    
+    // Calculate earnings for model
+    const tokensUsed = Math.ceil(callDuration / 30);
+    if (auth.userRole === 'model') {
+      const earnedKsh = tokensUsed * TOKEN_TO_KSH;
+      auth.setTotalEarned(prev => prev + earnedKsh);
+      showNotification(`💰 Earned KSh ${earnedKsh}!`, 'success');
+    }
+    
+    fetchCallHistory(auth.userId);
+  } catch (error) { 
+    console.error('Error ending call:', error); 
+    // Force cleanup even on error
+    setActiveCall(null);
+    setInCall(false);
+    setLocalTrack(null);
+    setIncomingCall(null);
+  }
+};
   const handleGiftTokens = (amount) => {
     if (auth.userTokens < amount) return showNotification('Insufficient tokens!', 'error');
     showNotification(`💝 Gifted ${amount} tokens!`, 'success');
