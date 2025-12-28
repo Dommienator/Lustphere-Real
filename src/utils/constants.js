@@ -1,5 +1,5 @@
 export const TOKEN_TO_KSH = 23;
-export const API_URL = 'http://localhost:5000/api';
+export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 export const PROFILES_PER_PAGE = 20;
 
 export const PRICING_TIERS = [
