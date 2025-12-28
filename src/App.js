@@ -1,57 +1,76 @@
-import React, { useState, useEffect, useRef } from 'react';
-import AgoraRTC from 'agora-rtc-sdk-ng';
+import React, { useState, useEffect, useRef } from "react";
+import AgoraRTC from "agora-rtc-sdk-ng";
 
 // Utils & Services
-import { TOKEN_TO_KSH, API_URL } from './utils/constants';
-import { getAgoraToken } from './services/agora';
-import { callAPI } from './services/api';
+import { TOKEN_TO_KSH, API_URL } from "./utils/constants";
+import { getAgoraToken } from "./services/agora";
+import { callAPI } from "./services/api";
 
 // Hooks
-import { useNotifications } from './hooks/useNotifications';
-import { useAuth } from './hooks/useAuth';
-import { useProfiles } from './hooks/useProfiles';
-import { useCallManagement } from './hooks/useCallManagement';
+import { useNotifications } from "./hooks/useNotifications";
+import { useAuth } from "./hooks/useAuth";
+import { useProfiles } from "./hooks/useProfiles";
+import { useCallManagement } from "./hooks/useCallManagement";
 
 // Components
-import { Notification } from './components/Notification';
-import { Header } from './components/Header';
-import { CallScreen } from './components/CallScreen';
-import { ModelDashboard } from './components/ModelDashboard';
-import { ProfileGrid } from './components/ProfileGrid';
+import { Notification } from "./components/Notification";
+import { Header } from "./components/Header";
+import { CallScreen } from "./components/CallScreen";
+import { ModelDashboard } from "./components/ModelDashboard";
+import { ProfileGrid } from "./components/ProfileGrid";
 
 // Modals
-import { AuthModal } from './components/modals/AuthModal';
-import { VerificationModal } from './components/modals/VerificationModal';
-import { ProfileEditModal } from './components/modals/ProfileEditModal';
-import { ModelProfileModal } from './components/modals/ModelProfileModal';
-import { PaymentSetupModal } from './components/modals/PaymentSetupModal';
-import { TokenPurchaseModal } from './components/modals/TokenPurchaseModal';
-import { WithdrawModal } from './components/modals/WithdrawModal';
-import { CallHistoryModal } from './components/modals/CallHistoryModal';
-import { EarningsHistoryModal } from './components/modals/EarningsHistoryModal';
-import { SafetyWarningModal } from './components/modals/SafetyWarningModal';
-import { IncomingCallModal } from './components/modals/IncomingCallModal';
-import { GiftModal } from './components/modals/GiftModal';
+import { AuthModal } from "./components/modals/AuthModal";
+import { VerificationModal } from "./components/modals/VerificationModal";
+import { ProfileEditModal } from "./components/modals/ProfileEditModal";
+import { ModelProfileModal } from "./components/modals/ModelProfileModal";
+import { PaymentSetupModal } from "./components/modals/PaymentSetupModal";
+import { TokenPurchaseModal } from "./components/modals/TokenPurchaseModal";
+import { WithdrawModal } from "./components/modals/WithdrawModal";
+import { CallHistoryModal } from "./components/modals/CallHistoryModal";
+import { EarningsHistoryModal } from "./components/modals/EarningsHistoryModal";
+import { SafetyWarningModal } from "./components/modals/SafetyWarningModal";
+import { IncomingCallModal } from "./components/modals/IncomingCallModal";
+import { GiftModal } from "./components/modals/GiftModal";
 
-const client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 export default function VideoDatingPlatform() {
   // Notifications
   const { notification, showNotification } = useNotifications();
-  
+
   // Profiles
-  const { profiles, onlineCount, loading, fetchProfiles, updateProfile, updatePaymentMethod } = useProfiles();
-  
+  const {
+    profiles,
+    onlineCount,
+    loading,
+    fetchProfiles,
+    updateProfile,
+    updatePaymentMethod,
+  } = useProfiles();
+
   // Call Management
-  const { callHistory, earningsHistory, fetchCallHistory, fetchEarningsHistory, purchaseTokens, withdrawEarnings } = useCallManagement();
-  
+  const {
+    callHistory,
+    earningsHistory,
+    fetchCallHistory,
+    fetchEarningsHistory,
+    purchaseTokens,
+    withdrawEarnings,
+  } = useCallManagement();
+
   // Auth
-  const auth = useAuth(showNotification, fetchProfiles, fetchCallHistory, fetchEarningsHistory);
-  
+  const auth = useAuth(
+    showNotification,
+    fetchProfiles,
+    fetchCallHistory,
+    fetchEarningsHistory
+  );
+
   // UI State
   const [currentPage, setCurrentPage] = useState(1);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
+  const [authMode, setAuthMode] = useState("login");
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showModelProfile, setShowModelProfile] = useState(false);
   const [showPaymentSetup, setShowPaymentSetup] = useState(false);
@@ -62,17 +81,27 @@ export default function VideoDatingPlatform() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSafetyWarning, setShowSafetyWarning] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
-  
+
   // Form State
-  const [form, setForm] = useState({ 
-    email: '', password: '', confirmPassword: '', name: '', nickname: '', role: '', 
-    age: '', tagline: '', location: '', picturePreview: null, agreedToTerms: false, paymentMethod: 'mpesa'
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    nickname: "",
+    role: "",
+    age: "",
+    tagline: "",
+    location: "",
+    picturePreview: null,
+    agreedToTerms: false,
+    paymentMethod: "mpesa",
   });
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState("");
   const [selectedTokenPackage, setSelectedTokenPackage] = useState(null);
-  const [mpesaNumber, setMpesaNumber] = useState('');
-  const [withdrawAmount, setWithdrawAmount] = useState('');
-  
+  const [mpesaNumber, setMpesaNumber] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+
   // Call State
   const [activeCall, setActiveCall] = useState(null);
   const [pendingProfile, setPendingProfile] = useState(null);
@@ -80,7 +109,7 @@ export default function VideoDatingPlatform() {
   const [callDuration, setCallDuration] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
   const [localTrack, setLocalTrack] = useState(null);
-  
+
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const callTimerRef = useRef(null);
@@ -93,21 +122,21 @@ export default function VideoDatingPlatform() {
   useEffect(() => {
     if (auth.isLoggedIn && auth.userId) {
       fetchCallHistory(auth.userId);
-      if (auth.userRole === 'model') {
+      if (auth.userRole === "model") {
         fetchEarningsHistory(auth.userId);
       }
     }
   }, [auth.isLoggedIn, auth.userId, auth.userRole]);
 
   useEffect(() => {
-    if (auth.isLoggedIn && auth.userRole === 'model' && auth.userId) {
+    if (auth.isLoggedIn && auth.userRole === "model" && auth.userId) {
       const pollInterval = setInterval(async () => {
         try {
           const response = await callAPI.checkIncoming(auth.userId);
           const data = await response.json();
           if (data.hasCall) setIncomingCall(data.call);
         } catch (error) {
-          console.error('Error polling:', error);
+          console.error("Error polling:", error);
         }
       }, 3000);
       return () => clearInterval(pollInterval);
@@ -115,15 +144,15 @@ export default function VideoDatingPlatform() {
   }, [auth.isLoggedIn, auth.userRole, auth.userId]);
 
   useEffect(() => {
-    if (inCall && auth.userRole === 'client') {
+    if (inCall && auth.userRole === "client") {
       callTimerRef.current = setInterval(() => {
-        setCallDuration(prev => {
+        setCallDuration((prev) => {
           const newDuration = prev + 1;
           if (newDuration > 0 && newDuration % 30 === 0) {
             if (auth.userTokens > 0) {
-              auth.setUserTokens(t => t - 1);
+              auth.setUserTokens((t) => t - 1);
             } else {
-              showNotification('Out of tokens! Call ending...', 'error');
+              showNotification("Out of tokens! Call ending...", "error");
               handleEndCall();
             }
           }
@@ -131,50 +160,56 @@ export default function VideoDatingPlatform() {
         });
       }, 1000);
     }
-    return () => { if (callTimerRef.current) clearInterval(callTimerRef.current); };
+    return () => {
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    };
   }, [inCall, auth.userRole, auth.userTokens]);
   // Persist login on refresh
-useEffect(() => {
-  const savedUser = localStorage.getItem('user');
-  if (savedUser) {
-    const userData = JSON.parse(savedUser);
-    auth.setUserId(userData.userId);
-    auth.setUserRole(userData.role);
-    auth.setUserName(userData.name);
-    auth.setUserNickname(userData.nickname);
-    auth.setUserTokens(userData.tokens);
-    auth.setTotalEarned(userData.totalEarned);
-    auth.setIsLoggedIn(true);
-  }
-}, []);
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      const userData = JSON.parse(savedUser);
+      auth.setUserId(userData.userId);
+      auth.setUserRole(userData.role);
+      auth.setUserName(userData.name);
+      auth.setUserNickname(userData.nickname);
+      auth.setUserTokens(userData.tokens);
+      auth.setTotalEarned(userData.totalEarned);
+      auth.setIsLoggedIn(true);
+    }
+  }, []);
 
   // Handlers
   const handlePictureUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setForm({ ...form, picturePreview: reader.result });
+      reader.onloadend = () =>
+        setForm({ ...form, picturePreview: reader.result });
       reader.readAsDataURL(file);
     }
   };
 
   const handleSignup = async (e) => {
-  e.preventDefault();
-  if (!form.agreedToTerms) return showNotification('Please agree to terms', 'error');
-  if (form.age && parseInt(form.age) < 18) return showNotification('Must be 18+', 'error');
-  
-  const result = await auth.signup(form);
-  if (result.success) {
-    showNotification('✨ Signup successful! You can now login.', 'success');
-    setShowAuthModal(false);
-    setAuthMode('login');
-  }
-};
+    e.preventDefault();
+    if (!form.agreedToTerms)
+      return showNotification("Please agree to terms", "error");
+    if (form.age && parseInt(form.age) < 18)
+      return showNotification("Must be 18+", "error");
+
+    const result = await auth.signup(form);
+    if (result.success) {
+      showNotification("✨ Signup successful! You can now login.", "success");
+      setShowAuthModal(false);
+      setAuthMode("login");
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!form.agreedToTerms) return showNotification('Please agree to terms', 'error');
-    
+    if (!form.agreedToTerms)
+      return showNotification("Please agree to terms", "error");
+
     const result = await auth.login(form);
     if (result.success) {
       setShowAuthModal(false);
@@ -187,7 +222,7 @@ useEffect(() => {
     const result = await auth.verifyEmail(form.email, verificationCode);
     if (result.success) {
       setShowVerificationModal(false);
-      setAuthMode('login');
+      setAuthMode("login");
     }
   };
 
@@ -202,7 +237,11 @@ useEffect(() => {
   };
 
   const handlePaymentMethodChange = async (method) => {
-    const result = await updatePaymentMethod(auth.userId, method, showNotification);
+    const result = await updatePaymentMethod(
+      auth.userId,
+      method,
+      showNotification
+    );
     if (result.success) {
       setForm({ ...form, paymentMethod: method });
       setShowPaymentSetup(false);
@@ -212,7 +251,7 @@ useEffect(() => {
   const handleTokenPurchase = (tier) => {
     if (!auth.isLoggedIn) {
       setShowAuthModal(true);
-      setAuthMode('login');
+      setAuthMode("login");
       return;
     }
     setSelectedTokenPackage(tier);
@@ -220,31 +259,50 @@ useEffect(() => {
   };
 
   const confirmTokenPurchase = async () => {
-    const result = await purchaseTokens(auth.userId, selectedTokenPackage, mpesaNumber, showNotification);
+    const result = await purchaseTokens(
+      auth.userId,
+      selectedTokenPackage,
+      mpesaNumber,
+      showNotification
+    );
     if (result.success) {
       setShowTokenPurchase(false);
-      setMpesaNumber('');
+      setMpesaNumber("");
     }
   };
 
   const handleWithdraw = async () => {
-    const result = await withdrawEarnings(auth.userId, withdrawAmount, auth.totalEarned, showNotification);
+    const result = await withdrawEarnings(
+      auth.userId,
+      withdrawAmount,
+      auth.totalEarned,
+      showNotification
+    );
     if (result.success) {
       auth.setTotalEarned(auth.totalEarned - result.amount);
       setShowWithdrawModal(false);
-      setWithdrawAmount('');
+      setWithdrawAmount("");
       fetchEarningsHistory(auth.userId);
     }
   };
 
   const handleStartCall = (profile) => {
     if (!auth.isLoggedIn) {
-      showNotification('Please login to make a call', 'error');
+      showNotification("Please login to make a call", "error");
       setShowAuthModal(true);
       return;
     }
-    if (auth.userRole !== 'client') return showNotification('Only clients can initiate calls', 'error');
-    if (auth.userTokens < 1) return showNotification('No tokens! Please purchase more.', 'error');
+
+    // NEW: Check if model is online
+    if (!profile.isOnline) {
+      showNotification("📵 This model is currently offline", "error");
+      return;
+    }
+
+    if (auth.userRole !== "client")
+      return showNotification("Only clients can initiate calls", "error");
+    if (auth.userTokens < 1)
+      return showNotification("No tokens! Please purchase more.", "error");
 
     setPendingProfile(profile);
     setShowSafetyWarning(true);
@@ -253,12 +311,19 @@ useEffect(() => {
   const confirmCall = async () => {
     setShowSafetyWarning(false);
     const profile = pendingProfile;
-    const receiverUserId = typeof profile.userId === 'object' ? profile.userId._id : profile.userId;
+    const receiverUserId =
+      typeof profile.userId === "object" ? profile.userId._id : profile.userId;
     const channelName = `call_${auth.userId}_${receiverUserId}`;
-    
+
     try {
-      await callAPI.create({ callerId: auth.userId, receiverId: receiverUserId, channelName });
-    } catch (error) { console.error('Error creating call:', error); }
+      await callAPI.create({
+        callerId: auth.userId,
+        receiverId: receiverUserId,
+        channelName,
+      });
+    } catch (error) {
+      console.error("Error creating call:", error);
+    }
 
     setActiveCall(profile);
     setInCall(true);
@@ -281,20 +346,19 @@ useEffect(() => {
 
       if (localVideoRef.current) videoTrack.play(localVideoRef.current);
 
-      client.on('user-published', async (user, mediaType) => {
+      client.on("user-published", async (user, mediaType) => {
         await client.subscribe(user, mediaType);
-        if (mediaType === 'video' && remoteVideoRef.current) {
+        if (mediaType === "video" && remoteVideoRef.current) {
           user.videoTrack.play(remoteVideoRef.current);
         }
       });
       // Listen for remote user leaving
-client.on('user-left', async (user) => {
-  showNotification('📞 Call ended by other party', 'success');
-  handleEndCall();
-});
-
+      client.on("user-left", async (user) => {
+        showNotification("📞 Call ended by other party", "success");
+        handleEndCall();
+      });
     } catch (error) {
-      showNotification('Failed to start call: ' + error.message, 'error');
+      showNotification("Failed to start call: " + error.message, "error");
       setActiveCall(null);
       setInCall(false);
     }
@@ -311,7 +375,12 @@ client.on('user-left', async (user) => {
       const tokenData = await getAgoraToken(incomingCall.channelName, uid);
       if (!tokenData) return;
 
-      await client.join(tokenData.appId, incomingCall.channelName, tokenData.token, uid);
+      await client.join(
+        tokenData.appId,
+        incomingCall.channelName,
+        tokenData.token,
+        uid
+      );
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       setLocalTrack({ videoTrack, audioTrack });
@@ -319,86 +388,95 @@ client.on('user-left', async (user) => {
 
       if (localVideoRef.current) videoTrack.play(localVideoRef.current);
 
-      client.on('user-published', async (user, mediaType) => {
+      client.on("user-published", async (user, mediaType) => {
         await client.subscribe(user, mediaType);
-        if (mediaType === 'video' && remoteVideoRef.current) {
+        if (mediaType === "video" && remoteVideoRef.current) {
           user.videoTrack.play(remoteVideoRef.current);
         }
       });
 
       setIncomingCall(null);
-    } catch (error) { showNotification('Failed to accept call', 'error'); }
+    } catch (error) {
+      showNotification("Failed to accept call", "error");
+    }
   };
 
   const handleRejectCall = async () => {
-  if (!incomingCall) return;
-  
-  // Notify backend
-  await callAPI.end({ callId: incomingCall.id });
-  
-  setIncomingCall(null);
-  showNotification('📵 Call declined', 'success');
-};
+    if (!incomingCall) return;
+
+    // Notify backend
+    await callAPI.end({ callId: incomingCall.id });
+
+    setIncomingCall(null);
+    showNotification("📵 Call declined", "success");
+  };
 
   const handleEndCall = async () => {
-  try {
-    // Notify backend that call ended
-    if (activeCall) {
-      await callAPI.end({ 
-        callerId: auth.userId, 
-        receiverId: typeof activeCall.userId === 'object' ? activeCall.userId._id : activeCall.userId 
-      });
-    }
-    
-    // Close tracks
-    if (localTrack) {
-      if (localTrack.videoTrack) {
-        localTrack.videoTrack.stop();
-        localTrack.videoTrack.close();
+    try {
+      // Notify backend that call ended
+      if (activeCall) {
+        await callAPI.end({
+          callerId: auth.userId,
+          receiverId:
+            typeof activeCall.userId === "object"
+              ? activeCall.userId._id
+              : activeCall.userId,
+        });
       }
-      if (localTrack.audioTrack) {
-        localTrack.audioTrack.stop();
-        localTrack.audioTrack.close();
+
+      // Close tracks
+      if (localTrack) {
+        if (localTrack.videoTrack) {
+          localTrack.videoTrack.stop();
+          localTrack.videoTrack.close();
+        }
+        if (localTrack.audioTrack) {
+          localTrack.audioTrack.stop();
+          localTrack.audioTrack.close();
+        }
       }
+
+      await client.leave();
+
+      // Calculate tokens/earnings
+      const tokensUsed = Math.ceil(callDuration / 30);
+      const amount = tokensUsed * TOKEN_TO_KSH;
+
+      if (auth.userRole === "model") {
+        auth.setTotalEarned((prev) => prev + amount);
+        showNotification(`💰 Call ended! You earned KSh ${amount}`, "success");
+      } else {
+        showNotification(
+          `📞 Call ended! You spent ${tokensUsed} tokens (KSh ${amount})`,
+          "success"
+        );
+      }
+
+      // Clear all state
+      setActiveCall(null);
+      setInCall(false);
+      setLocalTrack(null);
+      setCallDuration(0);
+      setIncomingCall(null);
+      if (callTimerRef.current) {
+        clearInterval(callTimerRef.current);
+        callTimerRef.current = null;
+      }
+
+      fetchCallHistory(auth.userId);
+    } catch (error) {
+      console.error("Error ending call:", error);
+      // Force cleanup
+      setActiveCall(null);
+      setInCall(false);
+      setLocalTrack(null);
+      setIncomingCall(null);
     }
-    
-    await client.leave();
-    
-    // Calculate tokens/earnings
-    const tokensUsed = Math.ceil(callDuration / 30);
-    const amount = tokensUsed * TOKEN_TO_KSH;
-    
-    if (auth.userRole === 'model') {
-      auth.setTotalEarned(prev => prev + amount);
-      showNotification(`💰 Call ended! You earned KSh ${amount}`, 'success');
-    } else {
-      showNotification(`📞 Call ended! You spent ${tokensUsed} tokens (KSh ${amount})`, 'success');
-    }
-    
-    // Clear all state
-    setActiveCall(null);
-    setInCall(false);
-    setLocalTrack(null);
-    setCallDuration(0);
-    setIncomingCall(null);
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-      callTimerRef.current = null;
-    }
-    
-    fetchCallHistory(auth.userId);
-  } catch (error) { 
-    console.error('Error ending call:', error);
-    // Force cleanup
-    setActiveCall(null);
-    setInCall(false);
-    setLocalTrack(null);
-    setIncomingCall(null);
-  }
-};
+  };
   const handleGiftTokens = (amount) => {
-    if (auth.userTokens < amount) return showNotification('Insufficient tokens!', 'error');
-    showNotification(`💝 Gifted ${amount} tokens!`, 'success');
+    if (auth.userTokens < amount)
+      return showNotification("Insufficient tokens!", "error");
+    showNotification(`💝 Gifted ${amount} tokens!`, "success");
     auth.setUserTokens(auth.userTokens - amount);
     setShowGiftModal(false);
   };
@@ -407,7 +485,7 @@ client.on('user-left', async (user) => {
   if (inCall) {
     return (
       <>
-        <CallScreen 
+        <CallScreen
           activeCall={activeCall}
           callDuration={callDuration}
           userRole={auth.userRole}
@@ -417,7 +495,7 @@ client.on('user-left', async (user) => {
           onGiftClick={() => setShowGiftModal(true)}
           onEndCall={handleEndCall}
         />
-        <GiftModal 
+        <GiftModal
           show={showGiftModal}
           onClose={() => setShowGiftModal(false)}
           recipientName={activeCall?.name}
@@ -430,8 +508,8 @@ client.on('user-left', async (user) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-pink-100">
       <Notification notification={notification} />
-      
-      <Header 
+
+      <Header
         isLoggedIn={auth.isLoggedIn}
         userRole={auth.userRole}
         userName={auth.userName}
@@ -439,17 +517,30 @@ client.on('user-left', async (user) => {
         userTokens={auth.userTokens}
         totalEarned={auth.totalEarned}
         onlineCount={onlineCount}
-        onProfileClick={() => auth.userRole === 'client' ? setShowProfileEdit(true) : setShowModelProfile(true)}
+        onProfileClick={() =>
+          auth.userRole === "client"
+            ? setShowProfileEdit(true)
+            : setShowModelProfile(true)
+        }
         onEarningsClick={() => setShowPaymentSetup(true)}
         onCallHistoryClick={() => setShowCallHistory(true)}
-        onLogout={() => { auth.logout(); setShowAuthModal(false); }}
-        onAuthClick={() => { setShowAuthModal(true); setAuthMode('login'); }}
+        onLogout={() => {
+          auth.logout();
+          setShowAuthModal(false);
+        }}
+        onAuthClick={() => {
+          setShowAuthModal(true);
+          setAuthMode("login");
+        }}
       />
 
-      {auth.userRole === 'model' ? (
-        <ModelDashboard totalEarned={auth.totalEarned} onlineCount={onlineCount} />
+      {auth.userRole === "model" ? (
+        <ModelDashboard
+          totalEarned={auth.totalEarned}
+          onlineCount={onlineCount}
+        />
       ) : (
-        <ProfileGrid 
+        <ProfileGrid
           profiles={profiles}
           loading={loading}
           isLoggedIn={auth.isLoggedIn}
@@ -461,7 +552,7 @@ client.on('user-left', async (user) => {
       )}
 
       {/* All Modals */}
-      <AuthModal 
+      <AuthModal
         show={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         authMode={authMode}
@@ -473,7 +564,7 @@ client.on('user-left', async (user) => {
         handlePictureUpload={handlePictureUpload}
       />
 
-      <VerificationModal 
+      <VerificationModal
         show={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         email={form.email}
@@ -482,16 +573,16 @@ client.on('user-left', async (user) => {
         onVerify={handleVerifyEmail}
       />
 
-      <ProfileEditModal 
-        show={showProfileEdit && auth.userRole === 'client'}
+      <ProfileEditModal
+        show={showProfileEdit && auth.userRole === "client"}
         onClose={() => setShowProfileEdit(false)}
         nickname={form.nickname}
         setNickname={(val) => setForm({ ...form, nickname: val })}
         onSave={handleProfileUpdate}
       />
 
-      <ModelProfileModal 
-        show={showModelProfile && auth.userRole === 'model'}
+      <ModelProfileModal
+        show={showModelProfile && auth.userRole === "model"}
         onClose={() => setShowModelProfile(false)}
         userName={auth.userName}
         userNickname={auth.userNickname}
@@ -502,53 +593,65 @@ client.on('user-left', async (user) => {
         callHistory={callHistory}
       />
 
-      <PaymentSetupModal 
+      <PaymentSetupModal
         show={showPaymentSetup}
         onClose={() => setShowPaymentSetup(false)}
         totalEarned={auth.totalEarned}
         paymentMethod={form.paymentMethod}
         onPaymentMethodChange={handlePaymentMethodChange}
-        onWithdrawClick={() => { setShowPaymentSetup(false); setShowWithdrawModal(true); }}
-        onEarningsHistoryClick={() => { setShowPaymentSetup(false); setShowEarningsHistory(true); }}
+        onWithdrawClick={() => {
+          setShowPaymentSetup(false);
+          setShowWithdrawModal(true);
+        }}
+        onEarningsHistoryClick={() => {
+          setShowPaymentSetup(false);
+          setShowEarningsHistory(true);
+        }}
       />
 
-      <TokenPurchaseModal 
+      <TokenPurchaseModal
         show={showTokenPurchase}
-        onClose={() => { setShowTokenPurchase(false); setMpesaNumber(''); }}
+        onClose={() => {
+          setShowTokenPurchase(false);
+          setMpesaNumber("");
+        }}
         selectedPackage={selectedTokenPackage}
         mpesaNumber={mpesaNumber}
         setMpesaNumber={setMpesaNumber}
         onConfirm={confirmTokenPurchase}
       />
 
-      <WithdrawModal 
+      <WithdrawModal
         show={showWithdrawModal}
-        onClose={() => { setShowWithdrawModal(false); setWithdrawAmount(''); }}
+        onClose={() => {
+          setShowWithdrawModal(false);
+          setWithdrawAmount("");
+        }}
         totalEarned={auth.totalEarned}
         withdrawAmount={withdrawAmount}
         setWithdrawAmount={setWithdrawAmount}
         onConfirm={handleWithdraw}
       />
 
-      <CallHistoryModal 
+      <CallHistoryModal
         show={showCallHistory}
         onClose={() => setShowCallHistory(false)}
         callHistory={callHistory}
       />
 
-      <EarningsHistoryModal 
+      <EarningsHistoryModal
         show={showEarningsHistory}
         onClose={() => setShowEarningsHistory(false)}
         earningsHistory={earningsHistory}
       />
 
-      <SafetyWarningModal 
+      <SafetyWarningModal
         show={showSafetyWarning}
         onClose={() => setShowSafetyWarning(false)}
         onConfirm={confirmCall}
       />
 
-      <IncomingCallModal 
+      <IncomingCallModal
         show={!!incomingCall}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
