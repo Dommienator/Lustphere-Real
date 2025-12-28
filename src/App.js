@@ -159,16 +159,17 @@ useEffect(() => {
   };
 
   const handleSignup = async (e) => {
-    e.preventDefault();
-    if (!form.agreedToTerms) return showNotification('Please agree to terms', 'error');
-    if (form.age && parseInt(form.age) < 18) return showNotification('Must be 18+', 'error');
-    
-    const result = await auth.signup(form);
-    if (result.success) {
-      setShowAuthModal(false);
-      setShowVerificationModal(true);
-    }
-  };
+  e.preventDefault();
+  if (!form.agreedToTerms) return showNotification('Please agree to terms', 'error');
+  if (form.age && parseInt(form.age) < 18) return showNotification('Must be 18+', 'error');
+  
+  const result = await auth.signup(form);
+  if (result.success) {
+    showNotification('✨ Signup successful! You can now login.', 'success');
+    setShowAuthModal(false);
+    setAuthMode('login');
+  }
+};
 
   const handleLogin = async (e) => {
     e.preventDefault();

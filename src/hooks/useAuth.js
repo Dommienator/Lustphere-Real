@@ -143,8 +143,9 @@ localStorage.setItem('user', JSON.stringify({
   };
 
   return {
-    isLoggedIn, userId, userRole, userName, userNickname, userTokens, totalEarned,
-    setUserTokens, setTotalEarned, setUserNickname,
-    signup, login, logout, verifyEmail
-  };
+  isLoggedIn, userId, userRole, userName, userNickname, userTokens, totalEarned,
+  setUserTokens, setTotalEarned, setUserNickname,
+  setIsLoggedIn, setUserId, setUserRole, setUserName,  // ADD THESE
+  signup, login, logout, verifyEmail
+};
 };
