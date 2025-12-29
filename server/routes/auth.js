@@ -93,7 +93,8 @@ router.post("/login", async (req, res) => {
     }
     user.isOnline = true;
     await user.save();
-    // Also update profile if model
+
+    // ALSO update profile if model
     if (user.role === "model") {
       const Profile = require("../models/Profile");
       await Profile.findOneAndUpdate({ userId: user._id }, { isOnline: true });
