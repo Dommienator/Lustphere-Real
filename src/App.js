@@ -32,6 +32,7 @@ import { EarningsHistoryModal } from "./components/modals/EarningsHistoryModal";
 import { SafetyWarningModal } from "./components/modals/SafetyWarningModal";
 import { IncomingCallModal } from "./components/modals/IncomingCallModal";
 import { GiftModal } from "./components/modals/GiftModal";
+import { CallEndedModal } from "./components/modals/CallEndedModal";
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
@@ -81,6 +82,8 @@ export default function VideoDatingPlatform() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showSafetyWarning, setShowSafetyWarning] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [showCallEndedModal, setShowCallEndedModal] = useState(false);
+  const [callEndedData, setCallEndedData] = useState(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -144,11 +147,18 @@ export default function VideoDatingPlatform() {
   }, [auth.isLoggedIn, auth.userRole, auth.userId]);
 
   useEffect(() => {
-    if (inCall && auth.userRole === "client") {
+    if (inCall) {
+      // REMOVED && auth.userRole === "client"
       callTimerRef.current = setInterval(() => {
         setCallDuration((prev) => {
           const newDuration = prev + 1;
-          if (newDuration > 0 && newDuration % 30 === 0) {
+
+          // Only deduct tokens for clients
+          if (
+            auth.userRole === "client" &&
+            newDuration > 0 &&
+            newDuration % 30 === 0
+          ) {
             if (auth.userTokens > 0) {
               auth.setUserTokens((t) => t - 1);
             } else {
@@ -156,6 +166,7 @@ export default function VideoDatingPlatform() {
               handleEndCall();
             }
           }
+
           return newDuration;
         });
       }, 1000);
@@ -354,8 +365,7 @@ export default function VideoDatingPlatform() {
       });
       // Listen for remote user leaving
       client.on("user-left", async (user) => {
-        showNotification("📞 Call ended by other party", "success");
-        handleEndCall();
+        handleEndCall("other"); // Pass 'other' to indicate ended by other party
       });
     } catch (error) {
       showNotification("Failed to start call: " + error.message, "error");
@@ -415,7 +425,7 @@ export default function VideoDatingPlatform() {
     showNotification("📵 Call declined", "success");
   };
 
-  const handleEndCall = async () => {
+  const handleEndCall = async (endedBy = "self") => {
     try {
       // Notify backend that call ended
       if (activeCall) {
@@ -446,15 +456,22 @@ export default function VideoDatingPlatform() {
       const tokensUsed = Math.ceil(callDuration / 30);
       const amount = tokensUsed * TOKEN_TO_KSH;
 
+      // Update earnings for model
       if (auth.userRole === "model") {
         auth.setTotalEarned((prev) => prev + amount);
-        showNotification(`💰 Call ended! You earned KSh ${amount}`, "success");
-      } else {
-        showNotification(
-          `📞 Call ended! You spent ${tokensUsed} tokens (KSh ${amount})`,
-          "success"
-        );
       }
+
+      // Show detailed modal instead of notification
+      setCallEndedData({
+        duration: callDuration,
+        tokensUsed,
+        amountKsh: amount,
+        isModel: auth.userRole === "model",
+        totalEarnedToday:
+          auth.userRole === "model" ? auth.totalEarned + amount : undefined,
+        endedBy,
+      });
+      setShowCallEndedModal(true);
 
       // Clear all state
       setActiveCall(null);
@@ -659,6 +676,11 @@ export default function VideoDatingPlatform() {
         show={!!incomingCall}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
+      />
+      <CallEndedModal
+        show={showCallEndedModal}
+        onClose={() => setShowCallEndedModal(false)}
+        callData={callEndedData}
       />
     </div>
   );
