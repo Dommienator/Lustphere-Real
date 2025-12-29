@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { profileAPI } from '../services/api';
+import { useState } from "react";
+import { profileAPI } from "../services/api";
 
 export const useProfiles = () => {
   const [profiles, setProfiles] = useState([]);
@@ -11,20 +11,37 @@ export const useProfiles = () => {
     try {
       const response = await profileAPI.getAll();
       const data = await response.json();
-      
-      if (Array.isArray(data)) {
-        const online = data.filter(p => p.isOnline).sort(() => Math.random() - 0.5);
-        const offline = data.filter(p => !p.isOnline).sort(() => Math.random() - 0.5);
+
+      // Backend now returns { profiles: [...], onlineCount: 5 }
+      if (data.profiles && Array.isArray(data.profiles)) {
+        const online = data.profiles.filter((p) => p.isOnline);
+        const offline = data.profiles.filter((p) => !p.isOnline);
+
+        // Online first, then offline
         setProfiles([...online, ...offline]);
+
         setOnlineCount({
-          models: online.length,
-          clients: Math.floor(Math.random() * 50) + 20
+          models: data.onlineCount, // Real count from backend
+          clients: online.length * 2, // Estimate: assume 2 clients per online model
+        });
+      } else if (Array.isArray(data)) {
+        // Fallback for old format
+        setProfiles(data);
+        const onlineModels = data.filter(
+          (p) => p.isOnline || p.userId?.isOnline
+        ).length;
+        setOnlineCount({
+          models: onlineModels,
+          clients: onlineModels * 2,
         });
       } else {
         setProfiles([]);
+        setOnlineCount({ models: 0, clients: 0 });
       }
     } catch (error) {
+      console.error("Fetch profiles error:", error);
       setProfiles([]);
+      setOnlineCount({ models: 0, clients: 0 });
     }
     setLoading(false);
   };
@@ -37,37 +54,40 @@ export const useProfiles = () => {
         tagline: data.tagline,
         picture: data.picture,
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok) {
-        showNotification('✅ Profile updated!', 'success');
+        showNotification("✅ Profile updated!", "success");
         fetchProfiles();
         return { success: true };
       } else {
-        showNotification(result.message || 'Update failed', 'error');
+        showNotification(result.message || "Update failed", "error");
         return { success: false };
       }
     } catch (error) {
-      showNotification('Update failed', 'error');
+      showNotification("Update failed", "error");
       return { success: false };
     }
   };
 
   const updatePaymentMethod = async (userId, method, showNotification) => {
     try {
-      const response = await profileAPI.updatePaymentMethod({ userId, paymentMethod: method });
+      const response = await profileAPI.updatePaymentMethod({
+        userId,
+        paymentMethod: method,
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
-        showNotification('✅ Payment method updated!', 'success');
+        showNotification("✅ Payment method updated!", "success");
         return { success: true };
       } else {
-        showNotification(data.message || 'Update failed', 'error');
+        showNotification(data.message || "Update failed", "error");
         return { success: false };
       }
     } catch (error) {
-      showNotification('Update failed', 'error');
+      showNotification("Update failed", "error");
       return { success: false };
     }
   };
@@ -78,6 +98,6 @@ export const useProfiles = () => {
     loading,
     fetchProfiles,
     updateProfile,
-    updatePaymentMethod
+    updatePaymentMethod,
   };
 };
