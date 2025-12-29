@@ -105,7 +105,18 @@ app.post("/api/calls/reject", (req, res) => {
     res.json({ success: false, message: "Call not found" });
   }
 });
-
+// Add this BEFORE the "Basic Route" section
+app.get("/api/debug/users", async (req, res) => {
+  try {
+    const User = require("./models/User");
+    const users = await User.find({ role: "model" }).select(
+      "name email isOnline"
+    );
+    res.json(users);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
 // Basic Route
 app.get("/", (req, res) => {
   res.json({ message: "🔥 LustSphere HD Backend Running" });
