@@ -34,6 +34,8 @@ import { IncomingCallModal } from "./components/modals/IncomingCallModal";
 import { GiftModal } from "./components/modals/GiftModal";
 import { CallEndedModal } from "./components/modals/CallEndedModal";
 
+console.log("🌐 API_URL:", API_URL);
+
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 export default function VideoDatingPlatform() {

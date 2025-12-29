@@ -82,37 +82,56 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password, role } = req.body;
 
+    console.log("🔵 LOGIN ATTEMPT:", email, role);
+
     const user = await User.findOne({ email });
     if (!user || user.password !== password) {
+      console.log("❌ LOGIN FAILED: Invalid credentials");
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     if (user.role !== role) {
+      console.log("❌ LOGIN FAILED: Wrong role");
       return res.status(400).json({ message: "Invalid role for this account" });
     }
+
+    console.log("🟡 BEFORE SAVE - isOnline:", user.isOnline);
+
     user.isOnline = true;
     await user.save();
 
+    console.log("🟢 AFTER SAVE - isOnline:", user.isOnline);
+
+    // Verify it was actually saved
+    const checkUser = await User.findById(user._id);
+    console.log("✅ VERIFICATION CHECK - isOnline:", checkUser.isOnline);
+
     res.json({ message: "Login successful", user });
   } catch (error) {
+    console.error("💥 LOGIN ERROR:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
-
 // Logout
 router.post("/logout", async (req, res) => {
   try {
     const { userId } = req.body;
 
+    console.log("🔴 LOGOUT ATTEMPT:", userId);
+
     const user = await User.findById(userId);
     if (user) {
+      console.log("🟡 BEFORE LOGOUT - isOnline:", user.isOnline);
+
       user.isOnline = false;
       await user.save();
+
+      console.log("⚫ AFTER LOGOUT - isOnline:", user.isOnline);
     }
     res.json({ message: "Logged out successfully" });
   } catch (error) {
+    console.error("💥 LOGOUT ERROR:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });
-
 module.exports = router;
