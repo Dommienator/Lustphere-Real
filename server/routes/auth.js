@@ -66,7 +66,6 @@ router.post("/signup", async (req, res) => {
         location,
         tagline,
         verified: false,
-        isOnline: true,
       });
       await profile.save();
     }
@@ -94,11 +93,6 @@ router.post("/login", async (req, res) => {
     user.isOnline = true;
     await user.save();
 
-    // ALSO update profile if model
-    if (user.role === "model") {
-      const Profile = require("../models/Profile");
-      await Profile.findOneAndUpdate({ userId: user._id }, { isOnline: true });
-    }
     res.json({ message: "Login successful", user });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -114,15 +108,6 @@ router.post("/logout", async (req, res) => {
     if (user) {
       user.isOnline = false;
       await user.save();
-
-      // Update profile if model
-      if (user.role === "model") {
-        const Profile = require("../models/Profile");
-        await Profile.findOneAndUpdate(
-          { userId: user._id },
-          { isOnline: false }
-        );
-      }
     }
     res.json({ message: "Logged out successfully" });
   } catch (error) {

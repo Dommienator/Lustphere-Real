@@ -121,6 +121,21 @@ app.get("/api/debug/users", async (req, res) => {
 app.get("/", (req, res) => {
   res.json({ message: "🔥 LustSphere HD Backend Running" });
 });
+// Temporary: Fix all existing profiles - remove isOnline field
+app.get("/api/admin/cleanup-profiles", async (req, res) => {
+  try {
+    const Profile = require("./models/Profile");
+
+    // Remove isOnline field from all profiles
+    await Profile.updateMany({}, { $unset: { isOnline: "" } });
+
+    res.json({
+      message: "Profiles cleaned up! isOnline removed from all profiles.",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Start Server
 const PORT = process.env.PORT || 5000;
