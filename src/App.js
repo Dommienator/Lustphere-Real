@@ -404,8 +404,12 @@ export default function VideoDatingPlatform() {
   const handleRejectCall = async () => {
     if (!incomingCall) return;
 
-    // Notify backend
-    await callAPI.end({ callId: incomingCall.id });
+    try {
+      // Use reject instead of end
+      await callAPI.reject({ callId: incomingCall.id });
+    } catch (error) {
+      console.error("Error rejecting call:", error);
+    }
 
     setIncomingCall(null);
     showNotification("📵 Call declined", "success");
