@@ -6,7 +6,7 @@ export const useAuth = (
   showNotification,
   fetchProfiles,
   fetchCallHistory,
-  fetchEarningsHistory
+  fetchEarningsHistory,
 ) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -66,13 +66,13 @@ export const useAuth = (
       if (response.ok) {
         showNotification(
           "✨ Signup successful! Check your email to verify.",
-          "success"
+          "success",
         );
         return { success: true, data };
       } else {
         showNotification(
           data.message || "Signup failed. Please try again.",
-          "error"
+          "error",
         );
         console.error("Signup error response:", data);
         return { success: false, error: data };
@@ -107,7 +107,6 @@ export const useAuth = (
         setUserTokens(data.user.tokens || 100);
         setTotalEarned(data.user.totalEarned || 0);
         setIsLoggedIn(true);
-        setIsLoggedIn(true);
 
         // Save to localStorage
         localStorage.setItem(
@@ -119,12 +118,12 @@ export const useAuth = (
             nickname: data.user.nickname,
             tokens: data.user.tokens || 100,
             totalEarned: data.user.totalEarned || 0,
-          })
+          }),
         );
 
         showNotification(
           `💜 Welcome back, ${data.user.nickname || data.user.name}!`,
-          "success"
+          "success",
         );
         fetchProfiles();
         fetchCallHistory();
@@ -191,7 +190,7 @@ export const useAuth = (
     setIsLoggedIn,
     setUserId,
     setUserRole,
-    setUserName, // ADD THESE
+    setUserName,
     signup,
     login,
     logout,

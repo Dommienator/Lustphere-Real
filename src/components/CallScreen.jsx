@@ -1,9 +1,6 @@
-import React from 'react';
-import { Zap, Gift, PhoneOff } from 'lucide-react';
-import { TOKEN_TO_KSH } from '../utils/constants';
-import { formatTime } from '../utils/validation';
+import React from "react";
 
-export const CallScreen = ({ 
+export const CallScreen = ({
   activeCall,
   callDuration,
   userRole,
@@ -11,46 +8,77 @@ export const CallScreen = ({
   localVideoRef,
   remoteVideoRef,
   onGiftClick,
-  onEndCall
+  onEndCall,
+  callStatus,
 }) => {
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   return (
-    <div className="min-h-screen bg-black flex flex-col">
-      <div className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-500 p-4 flex justify-between items-center">
-        <div className="text-white">
-          <div className="text-xl font-bold">{activeCall?.name || 'Call'}</div>
-          <div className="text-sm opacity-90">Duration: {formatTime(callDuration)}</div>
-        </div>
-        <div className="flex items-center gap-4">
-          {userRole === 'client' && (
-            <>
-              <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full text-white font-bold">
-                <Zap className="w-4 h-4 inline mr-1" /> {userTokens}
-              </div>
-              <button onClick={onGiftClick} className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2">
-                <Gift className="w-4 h-4" /> Gift
-              </button>
-            </>
-          )}
-          {userRole === 'model' && (
-            <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full text-white font-bold">
-              💰 Earning: KSh {Math.ceil(callDuration / 30) * TOKEN_TO_KSH}
-            </div>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-pink-900 to-purple-900 relative">
+      {/* Remote Video - Full Screen */}
+      <div className="w-full h-screen bg-black">
+        <div ref={remoteVideoRef} className="w-full h-full"></div>
+      </div>
+
+      {/* Local Video - Picture in Picture */}
+      <div className="absolute top-4 right-4 w-32 h-24 md:w-48 md:h-36 bg-black rounded-lg overflow-hidden shadow-2xl z-10 border-2 border-white">
+        <div ref={localVideoRef} className="w-full h-full"></div>
+        <div className="absolute bottom-2 left-2 text-white text-xs md:text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
+          You
         </div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center gap-4 p-4">
-        <div className="w-96 h-96 bg-gray-900 rounded-lg overflow-hidden border-2 border-pink-400">
-          <div ref={localVideoRef} style={{ width: '100%', height: '100%' }} className="bg-gray-800" />
+      {/* Call Status - Shows when ringing or connecting */}
+      {callStatus && callStatus !== "connected" && (
+        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-6 py-3 rounded-full z-20 text-lg font-semibold shadow-lg">
+          {callStatus === "ringing" && "📞 Ringing..."}
+          {callStatus === "connecting" && "🔄 Connecting..."}
         </div>
-        <div className="w-96 h-96 bg-gray-900 rounded-lg overflow-hidden border-2 border-purple-400">
-          <div ref={remoteVideoRef} style={{ width: '100%', height: '100%' }} className="bg-gray-800" />
+      )}
+
+      {/* Call Info - Top Left */}
+      <div className="absolute top-4 left-4 text-white z-10 bg-black bg-opacity-50 px-4 py-3 rounded-lg">
+        <h2 className="text-xl md:text-2xl font-bold mb-1">
+          {activeCall?.nickname || activeCall?.name || "Unknown"}
+        </h2>
+        <div className="text-lg md:text-xl font-mono">
+          {formatTime(callDuration)}
         </div>
+        {userRole === "client" && (
+          <div className="mt-2 text-sm md:text-base">
+            💎 Tokens: {userTokens}
+          </div>
+        )}
+        {userRole === "model" && (
+          <div className="mt-2 text-sm md:text-base text-green-300">
+            💰 Earning...
+          </div>
+        )}
       </div>
 
-      <div className="p-4 flex justify-center">
-        <button onClick={onEndCall} className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white px-12 py-4 rounded-full text-lg font-semibold flex items-center gap-2">
-          <PhoneOff className="w-6 h-6" /> End Call
+      {/* Controls - Bottom Center */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-10">
+        {/* Gift button (clients only) */}
+        {userRole === "client" && (
+          <button
+            onClick={onGiftClick}
+            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white p-4 rounded-full shadow-lg transition transform hover:scale-110"
+            title="Send Gift"
+          >
+            <span className="text-2xl">🎁</span>
+          </button>
+        )}
+
+        {/* End Call button */}
+        <button
+          onClick={onEndCall}
+          className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-full shadow-lg font-semibold text-lg transition transform hover:scale-105"
+        >
+          📞 End Call
         </button>
       </div>
     </div>

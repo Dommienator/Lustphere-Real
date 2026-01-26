@@ -63,14 +63,12 @@ export const callAPI = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-
   reject: (data) =>
     fetch(`${API_URL}/calls/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     }),
-
   getHistory: (userId) => fetch(`${API_URL}/calls/history/${userId}`),
 };
 

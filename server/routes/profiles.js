@@ -9,7 +9,7 @@ router.get("/", async (req, res) => {
     // Populate userId to get isOnline status from User model
     const profiles = await Profile.find().populate(
       "userId",
-      "name email nickname isOnline"
+      "name email nickname isOnline",
     );
 
     // Map profiles to include isOnline at root level for easier access
@@ -24,7 +24,9 @@ router.get("/", async (req, res) => {
       interests: profile.interests,
       verified: profile.verified,
       userId: profile.userId?._id,
-      isOnline: profile.userId?.isOnline || false, // Get from User model
+      isOnline: profile.userId?.isOnline || false,
+      location: profile.location,
+      tagline: profile.tagline,
       createdAt: profile.createdAt,
     }));
 
@@ -37,6 +39,19 @@ router.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Profile fetch error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
+// Get single profile
+router.get("/:id", async (req, res) => {
+  try {
+    const profile = await Profile.findById(req.params.id).populate("userId");
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+    res.json(profile);
+  } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 });

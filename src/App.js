@@ -34,8 +34,6 @@ import { IncomingCallModal } from "./components/modals/IncomingCallModal";
 import { GiftModal } from "./components/modals/GiftModal";
 import { CallEndedModal } from "./components/modals/CallEndedModal";
 
-console.log("🌐 API_URL:", API_URL);
-
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
 export default function VideoDatingPlatform() {
@@ -67,7 +65,7 @@ export default function VideoDatingPlatform() {
     showNotification,
     fetchProfiles,
     fetchCallHistory,
-    fetchEarningsHistory
+    fetchEarningsHistory,
   );
 
   // UI State
@@ -114,6 +112,7 @@ export default function VideoDatingPlatform() {
   const [callDuration, setCallDuration] = useState(0);
   const [incomingCall, setIncomingCall] = useState(null);
   const [localTrack, setLocalTrack] = useState(null);
+  const [callStatus, setCallStatus] = useState(null);
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -150,7 +149,6 @@ export default function VideoDatingPlatform() {
 
   useEffect(() => {
     if (inCall) {
-      // REMOVED && auth.userRole === "client"
       callTimerRef.current = setInterval(() => {
         setCallDuration((prev) => {
           const newDuration = prev + 1;
@@ -177,6 +175,7 @@ export default function VideoDatingPlatform() {
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
   }, [inCall, auth.userRole, auth.userTokens]);
+
   // Persist login on refresh
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
@@ -253,7 +252,7 @@ export default function VideoDatingPlatform() {
     const result = await updatePaymentMethod(
       auth.userId,
       method,
-      showNotification
+      showNotification,
     );
     if (result.success) {
       setForm({ ...form, paymentMethod: method });
@@ -276,7 +275,7 @@ export default function VideoDatingPlatform() {
       auth.userId,
       selectedTokenPackage,
       mpesaNumber,
-      showNotification
+      showNotification,
     );
     if (result.success) {
       setShowTokenPurchase(false);
@@ -289,7 +288,7 @@ export default function VideoDatingPlatform() {
       auth.userId,
       withdrawAmount,
       auth.totalEarned,
-      showNotification
+      showNotification,
     );
     if (result.success) {
       auth.setTotalEarned(auth.totalEarned - result.amount);
@@ -306,7 +305,6 @@ export default function VideoDatingPlatform() {
       return;
     }
 
-    // NEW: Check if model is online
     if (!profile.isOnline) {
       showNotification("📵 This model is currently offline", "error");
       return;
@@ -323,56 +321,110 @@ export default function VideoDatingPlatform() {
 
   const confirmCall = async () => {
     setShowSafetyWarning(false);
-    const profile = pendingProfile;
-    const receiverUserId =
-      typeof profile.userId === "object" ? profile.userId._id : profile.userId;
-    const channelName = `call_${auth.userId}_${receiverUserId}`;
 
     try {
+      // CLOSE any existing tracks first
+      if (localTrack) {
+        if (localTrack.videoTrack) {
+          localTrack.videoTrack.stop();
+          localTrack.videoTrack.close();
+        }
+        if (localTrack.audioTrack) {
+          localTrack.audioTrack.stop();
+          localTrack.audioTrack.close();
+        }
+        setLocalTrack(null);
+        console.log("✅ Closed previous tracks");
+      }
+
+      // FORCE LEAVE any existing connection
+      try {
+        await client.leave();
+        console.log("✅ Left any previous channel");
+      } catch (err) {
+        console.log("ℹ️ No previous channel to leave");
+      }
+
+      // Small delay
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      setCallStatus("ringing");
+
+      const profile = pendingProfile;
+      const receiverUserId =
+        typeof profile.userId === "object"
+          ? profile.userId._id
+          : profile.userId;
+      const channelName = `call_${auth.userId}_${receiverUserId}`;
+
+      console.log("📞 Creating call...");
       await callAPI.create({
         callerId: auth.userId,
         receiverId: receiverUserId,
         channelName,
       });
-    } catch (error) {
-      console.error("Error creating call:", error);
-    }
 
-    setActiveCall(profile);
-    setInCall(true);
-    setCallDuration(0);
-    const uid = Math.floor(Math.random() * 100000);
+      setActiveCall(profile);
+      const uid = Math.floor(Math.random() * 100000);
 
-    try {
+      console.log("🔄 Getting token...");
+      setCallStatus("connecting");
+
       const tokenData = await getAgoraToken(channelName, uid);
       if (!tokenData) {
+        console.error("❌ Failed to get token");
         setActiveCall(null);
-        setInCall(false);
+        setCallStatus(null);
+        showNotification("Failed to get connection token", "error");
         return;
       }
 
+      console.log("🔄 Joining channel...");
       await client.join(tokenData.appId, channelName, tokenData.token, uid);
+
+      console.log("🎥 Creating tracks...");
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       setLocalTrack({ videoTrack, audioTrack });
+
+      console.log("📤 Publishing...");
       await client.publish([videoTrack, audioTrack]);
 
-      if (localVideoRef.current) videoTrack.play(localVideoRef.current);
+      if (localVideoRef.current) {
+        videoTrack.play(localVideoRef.current);
+      }
+
+      console.log("👂 Setting up listeners...");
+
+      client.removeAllListeners("user-published");
+      client.removeAllListeners("user-left");
 
       client.on("user-published", async (user, mediaType) => {
+        console.log("📥 Model published:", mediaType);
         await client.subscribe(user, mediaType);
         if (mediaType === "video" && remoteVideoRef.current) {
           user.videoTrack.play(remoteVideoRef.current);
+          setCallStatus("connected");
+          setInCall(true);
+          console.log("✅ Connected!");
+        }
+        if (mediaType === "audio") {
+          user.audioTrack.play();
         }
       });
-      // Listen for remote user leaving
+
       client.on("user-left", async (user) => {
-        handleEndCall("other"); // Pass 'other' to indicate ended by other party
+        console.log("👋 Model left");
+        handleEndCall("other");
       });
+
+      console.log("✅ Ringing...");
+      setCallStatus("ringing");
     } catch (error) {
+      console.error("❌ Call failed:", error.message);
       showNotification("Failed to start call: " + error.message, "error");
       setActiveCall(null);
-      setInCall(false);
+      setCallStatus(null);
     }
   };
 
@@ -380,44 +432,133 @@ export default function VideoDatingPlatform() {
     if (!incomingCall) return;
 
     try {
+      console.log("🟢 Model accepting call:", incomingCall.id);
+
+      // CLOSE any existing tracks first
+      if (localTrack) {
+        if (localTrack.videoTrack) {
+          localTrack.videoTrack.stop();
+          localTrack.videoTrack.close();
+        }
+        if (localTrack.audioTrack) {
+          localTrack.audioTrack.stop();
+          localTrack.audioTrack.close();
+        }
+        setLocalTrack(null);
+        console.log("✅ Closed previous tracks");
+      }
+
+      // FORCE LEAVE any existing connection
+      try {
+        await client.leave();
+        console.log("✅ Left any previous channel");
+      } catch (err) {
+        console.log("ℹ️ No previous channel to leave");
+      }
+
+      // Small delay to ensure camera is released
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Mark call as accepted on backend
       await callAPI.accept({ callId: incomingCall.id });
-      setInCall(true);
-      setCallDuration(0);
+
+      // Clear incoming call IMMEDIATELY
+      setIncomingCall(null);
+      setCallStatus("connecting");
+      setActiveCall({
+        name: "Client",
+        userId: incomingCall.callerId,
+      });
+
       const uid = Math.floor(Math.random() * 100000);
+
+      console.log(
+        "🔄 Getting Agora token for channel:",
+        incomingCall.channelName,
+      );
       const tokenData = await getAgoraToken(incomingCall.channelName, uid);
-      if (!tokenData) return;
+
+      if (!tokenData) {
+        console.error("❌ Failed to get token");
+        showNotification("Failed to get connection token", "error");
+        setCallStatus(null);
+        setActiveCall(null);
+        return;
+      }
+
+      console.log("✅ Token received");
+      console.log("🔄 Joining Agora channel...");
 
       await client.join(
         tokenData.appId,
         incomingCall.channelName,
         tokenData.token,
-        uid
+        uid,
       );
+
+      console.log("✅ Joined channel");
+      console.log("🎥 Creating NEW camera and mic tracks...");
+
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
       const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+
+      console.log("✅ Tracks created");
       setLocalTrack({ videoTrack, audioTrack });
+
+      console.log("📤 Publishing tracks...");
       await client.publish([videoTrack, audioTrack]);
+      console.log("✅ Tracks published");
 
-      if (localVideoRef.current) videoTrack.play(localVideoRef.current);
+      if (localVideoRef.current) {
+        videoTrack.play(localVideoRef.current);
+        console.log("✅ Local video playing");
+      }
 
+      console.log("👂 Setting up event listeners...");
+
+      // Remove old listeners
+      client.removeAllListeners("user-published");
+      client.removeAllListeners("user-left");
+
+      // Listen for remote user
       client.on("user-published", async (user, mediaType) => {
-        await client.subscribe(user, mediaType);
-        if (mediaType === "video" && remoteVideoRef.current) {
-          user.videoTrack.play(remoteVideoRef.current);
+        console.log("📥 Remote user published:", mediaType);
+        try {
+          await client.subscribe(user, mediaType);
+          console.log("✅ Subscribed to", mediaType);
+
+          if (mediaType === "video" && remoteVideoRef.current) {
+            user.videoTrack.play(remoteVideoRef.current);
+            setCallStatus("connected");
+            setInCall(true);
+            console.log("✅ Call fully connected!");
+          }
+          if (mediaType === "audio") {
+            user.audioTrack.play();
+          }
+        } catch (err) {
+          console.error("❌ Subscribe error:", err);
         }
       });
 
-      setIncomingCall(null);
+      client.on("user-left", async (user) => {
+        console.log("👋 Remote user left");
+        handleEndCall("other");
+      });
+
+      console.log("✅ Model ready, waiting for client...");
     } catch (error) {
-      showNotification("Failed to accept call", "error");
+      console.error("❌ Accept call failed:", error.message);
+      showNotification("Failed to accept call: " + error.message, "error");
+      setCallStatus(null);
+      setIncomingCall(null);
+      setActiveCall(null);
     }
   };
-
   const handleRejectCall = async () => {
     if (!incomingCall) return;
 
     try {
-      // Use reject instead of end
       await callAPI.reject({ callId: incomingCall.id });
     } catch (error) {
       console.error("Error rejecting call:", error);
@@ -429,6 +570,39 @@ export default function VideoDatingPlatform() {
 
   const handleEndCall = async (endedBy = "self") => {
     try {
+      const tokensUsed = Math.ceil(callDuration / 30);
+      const amount = tokensUsed * TOKEN_TO_KSH;
+
+      // Save call to database
+      if (activeCall && callDuration > 0) {
+        try {
+          await fetch(`${API_URL}/calls/save`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              callerId:
+                auth.userRole === "client"
+                  ? auth.userId
+                  : typeof activeCall.userId === "object"
+                    ? activeCall.userId._id
+                    : activeCall.userId,
+              receiverId:
+                auth.userRole === "model"
+                  ? auth.userId
+                  : typeof activeCall.userId === "object"
+                    ? activeCall.userId._id
+                    : activeCall.userId,
+              duration: callDuration,
+              tokensUsed,
+              amountKsh: amount,
+              status: "completed",
+            }),
+          });
+        } catch (error) {
+          console.error("Error saving call:", error);
+        }
+      }
+
       // Notify backend that call ended
       if (activeCall) {
         await callAPI.end({
@@ -454,10 +628,6 @@ export default function VideoDatingPlatform() {
 
       await client.leave();
 
-      // Calculate tokens/earnings
-      const tokensUsed = Math.ceil(callDuration / 30);
-      const amount = tokensUsed * TOKEN_TO_KSH;
-
       // Update earnings for model
       if (auth.userRole === "model") {
         auth.setTotalEarned((prev) => prev + amount);
@@ -481,12 +651,16 @@ export default function VideoDatingPlatform() {
       setLocalTrack(null);
       setCallDuration(0);
       setIncomingCall(null);
+      setCallStatus(null);
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
         callTimerRef.current = null;
       }
 
       fetchCallHistory(auth.userId);
+      if (auth.userRole === "model") {
+        fetchEarningsHistory(auth.userId);
+      }
     } catch (error) {
       console.error("Error ending call:", error);
       // Force cleanup
@@ -494,8 +668,10 @@ export default function VideoDatingPlatform() {
       setInCall(false);
       setLocalTrack(null);
       setIncomingCall(null);
+      setCallStatus(null);
     }
   };
+
   const handleGiftTokens = (amount) => {
     if (auth.userTokens < amount)
       return showNotification("Insufficient tokens!", "error");
@@ -505,7 +681,7 @@ export default function VideoDatingPlatform() {
   };
 
   // Render
-  if (inCall) {
+  if (inCall || callStatus) {
     return (
       <>
         <CallScreen
@@ -517,6 +693,7 @@ export default function VideoDatingPlatform() {
           remoteVideoRef={remoteVideoRef}
           onGiftClick={() => setShowGiftModal(true)}
           onEndCall={handleEndCall}
+          callStatus={callStatus}
         />
         <GiftModal
           show={showGiftModal}
@@ -648,7 +825,7 @@ export default function VideoDatingPlatform() {
         show={showWithdrawModal}
         onClose={() => {
           setShowWithdrawModal(false);
-          setWithdrawAmount("");
+          setWithdrawAmount(""); // ← This completes the "set" from the first part
         }}
         totalEarned={auth.totalEarned}
         withdrawAmount={withdrawAmount}
@@ -679,6 +856,7 @@ export default function VideoDatingPlatform() {
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
       />
+
       <CallEndedModal
         show={showCallEndedModal}
         onClose={() => setShowCallEndedModal(false)}
