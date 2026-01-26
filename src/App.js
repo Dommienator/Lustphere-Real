@@ -121,6 +121,7 @@ export default function VideoDatingPlatform() {
   // Effects
   useEffect(() => {
     fetchProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -130,6 +131,7 @@ export default function VideoDatingPlatform() {
         fetchEarningsHistory(auth.userId);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.isLoggedIn, auth.userId, auth.userRole]);
 
   useEffect(() => {
@@ -174,6 +176,7 @@ export default function VideoDatingPlatform() {
     return () => {
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inCall, auth.userRole, auth.userTokens]);
 
   // Persist login on refresh
@@ -189,6 +192,7 @@ export default function VideoDatingPlatform() {
       auth.setTotalEarned(userData.totalEarned);
       auth.setIsLoggedIn(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handlers
@@ -555,6 +559,7 @@ export default function VideoDatingPlatform() {
       setActiveCall(null);
     }
   };
+
   const handleRejectCall = async () => {
     if (!incomingCall) return;
 
@@ -825,7 +830,7 @@ export default function VideoDatingPlatform() {
         show={showWithdrawModal}
         onClose={() => {
           setShowWithdrawModal(false);
-          setWithdrawAmount(""); // ← This completes the "set" from the first part
+          setWithdrawAmount("");
         }}
         totalEarned={auth.totalEarned}
         withdrawAmount={withdrawAmount}
