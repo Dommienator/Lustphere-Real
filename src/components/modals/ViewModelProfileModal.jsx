@@ -90,7 +90,7 @@ export const ViewModelProfileModal = ({ show, onClose, profile, onCall }) => {
               <div className="relative bg-gray-100 rounded-lg p-4">
                 <img
                   src={extraPictures[currentImageIndex]}
-                  alt={`Photo ${currentImageIndex + 1}`}
+                  alt={`${currentImageIndex + 1} of ${extraPictures.length}`}
                   className="w-full h-64 object-cover rounded-lg"
                 />
 
