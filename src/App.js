@@ -122,6 +122,7 @@ export default function VideoDatingPlatform() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const callTimerRef = useRef(null);
+  const declinedRef = useRef(false);
 
   // Effects
   useEffect(() => {
@@ -153,6 +154,69 @@ export default function VideoDatingPlatform() {
       return () => clearInterval(pollInterval);
     }
   }, [auth.isLoggedIn, auth.userRole, auth.userId]);
+
+  // POLL FOR CALL STATUS (CLIENT SIDE)
+  useEffect(() => {
+    if (
+      auth.isLoggedIn &&
+      auth.userRole === "client" &&
+      callStatus === "ringing" &&
+      activeCall
+    ) {
+      const statusPollInterval = setInterval(async () => {
+        try {
+          const receiverUserId =
+            typeof activeCall.userId === "object"
+              ? activeCall.userId._id
+              : activeCall.userId;
+          const response = await fetch(
+            `${API_URL}/calls/status/${auth.userId}/${receiverUserId}`,
+          );
+          const data = await response.json();
+
+          if (data.status === "declined") {
+            clearInterval(statusPollInterval);
+            declinedRef.current = true;
+
+            // Clean up everything
+            if (localTrack) {
+              if (localTrack.videoTrack) {
+                localTrack.videoTrack.stop();
+                localTrack.videoTrack.close();
+              }
+              if (localTrack.audioTrack) {
+                localTrack.audioTrack.stop();
+                localTrack.audioTrack.close();
+              }
+              setLocalTrack(null);
+            }
+
+            try {
+              await client.leave();
+            } catch (err) {
+              console.log("Already left channel");
+            }
+
+            setActiveCall(null);
+            setCallStatus(null);
+            setCallEndedData({ status: "declined", isModel: false });
+            setShowCallEndedModal(true);
+          }
+        } catch (error) {
+          console.error("Error checking call status:", error);
+        }
+      }, 2000);
+
+      return () => clearInterval(statusPollInterval);
+    }
+  }, [
+    auth.isLoggedIn,
+    auth.userRole,
+    callStatus,
+    activeCall,
+    auth.userId,
+    localTrack,
+  ]);
 
   useEffect(() => {
     if (inCall) {
@@ -193,6 +257,7 @@ export default function VideoDatingPlatform() {
       auth.setUserRole(userData.role);
       auth.setUserName(userData.name);
       auth.setUserNickname(userData.nickname);
+      auth.setUserEmail(userData.email);
       auth.setUserAge(userData.age);
       auth.setUserLocation(userData.location);
       auth.setUserTokens(userData.tokens);
@@ -232,8 +297,6 @@ export default function VideoDatingPlatform() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!form.agreedToTerms)
-      return showNotification("Please agree to terms", "error");
     if (!form.ageConfirmed)
       return showNotification("Please confirm you are 18+", "error");
 
@@ -253,6 +316,48 @@ export default function VideoDatingPlatform() {
     }
   };
 
+  const handleOpenProfileEdit = async () => {
+    // Fetch current profile data for client
+    try {
+      const response = await fetch(`${API_URL}/profiles/user/${auth.userId}`);
+      const data = await response.json();
+
+      if (data.profile) {
+        setForm({
+          ...form,
+          nickname: data.profile.nickname || auth.userNickname || "",
+          location: data.profile.location || auth.userLocation || "",
+          picturePreview: data.profile.picture || null,
+        });
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+    setShowProfileEdit(true);
+  };
+
+  const handleOpenModelProfile = async () => {
+    // Fetch current profile data for model
+    try {
+      const response = await fetch(`${API_URL}/profiles/user/${auth.userId}`);
+      const data = await response.json();
+
+      if (data.profile) {
+        setForm({
+          ...form,
+          picturePreview: data.profile.picture || null,
+          extraPictures: data.profile.extraPictures || [],
+          location: data.profile.location || "",
+          tagline: data.profile.tagline || "",
+          age: data.profile.age || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error loading profile:", error);
+    }
+    setShowModelProfile(true);
+  };
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     const result = await updateProfile(
@@ -266,12 +371,23 @@ export default function VideoDatingPlatform() {
       },
       showNotification,
     );
+
     if (result.success) {
       auth.setUserNickname(form.nickname);
       auth.setUserLocation(form.location);
       setShowProfileEdit(false);
       setShowModelProfile(false);
+
+      // Show success notification
+      showNotification("✅ Profile updated successfully!", "success");
+
+      // Refresh profiles
       fetchProfiles();
+
+      // Return to homepage (scroll to top)
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } else {
+      showNotification("❌ Failed to update profile", "error");
     }
   };
 
@@ -353,6 +469,7 @@ export default function VideoDatingPlatform() {
 
   const confirmCall = async () => {
     setShowSafetyWarning(false);
+    declinedRef.current = false;
 
     try {
       // CLOSE any existing tracks first
@@ -380,8 +497,6 @@ export default function VideoDatingPlatform() {
       // Small delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      setCallStatus("ringing");
-
       const profile = pendingProfile;
       const receiverUserId =
         typeof profile.userId === "object"
@@ -400,11 +515,10 @@ export default function VideoDatingPlatform() {
       });
 
       setActiveCall(profile);
+      setCallStatus("ringing");
       const uid = Math.floor(Math.random() * 100000);
 
       console.log("🔄 Getting token...");
-      setCallStatus("connecting");
-
       const tokenData = await getAgoraToken(channelName, uid);
       if (!tokenData) {
         console.error("❌ Failed to get token");
@@ -435,13 +549,15 @@ export default function VideoDatingPlatform() {
       client.removeAllListeners("user-left");
 
       client.on("user-published", async (user, mediaType) => {
+        if (declinedRef.current) return;
         console.log("📥 Model published:", mediaType);
+        setCallStatus("connecting");
         await client.subscribe(user, mediaType);
         if (mediaType === "video" && remoteVideoRef.current) {
           user.videoTrack.play(remoteVideoRef.current);
           setCallStatus("connected");
           setInCall(true);
-          console.log("✅ Connected!");
+          console.log("✅ Call in progress!");
         }
         if (mediaType === "audio") {
           user.audioTrack.play();
@@ -454,7 +570,6 @@ export default function VideoDatingPlatform() {
       });
 
       console.log("✅ Ringing...");
-      setCallStatus("ringing");
     } catch (error) {
       console.error("❌ Call failed:", error.message);
       showNotification("Failed to start call: " + error.message, "error");
@@ -566,7 +681,7 @@ export default function VideoDatingPlatform() {
             user.videoTrack.play(remoteVideoRef.current);
             setCallStatus("connected");
             setInCall(true);
-            console.log("✅ Call fully connected!");
+            console.log("✅ Call in progress!");
           }
           if (mediaType === "audio") {
             user.audioTrack.play();
@@ -770,8 +885,8 @@ export default function VideoDatingPlatform() {
         onlineCount={onlineCount}
         onProfileClick={() =>
           auth.userRole === "client"
-            ? setShowProfileEdit(true)
-            : setShowModelProfile(true)
+            ? handleOpenProfileEdit()
+            : handleOpenModelProfile()
         }
         onEarningsClick={() => setShowPaymentSetup(true)}
         onCallHistoryClick={() => setShowCallHistory(true)}
@@ -831,6 +946,9 @@ export default function VideoDatingPlatform() {
         form={form}
         setForm={setForm}
         onSave={handleProfileUpdate}
+        handlePictureUpload={handlePictureUpload}
+        userName={auth.userName}
+        userEmail={auth.userEmail}
       />
 
       <ModelProfileModal
@@ -838,6 +956,7 @@ export default function VideoDatingPlatform() {
         onClose={() => setShowModelProfile(false)}
         userName={auth.userName}
         userNickname={auth.userNickname}
+        userEmail={auth.userEmail}
         form={form}
         setForm={setForm}
         handlePictureUpload={handlePictureUpload}

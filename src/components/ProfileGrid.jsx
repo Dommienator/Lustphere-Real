@@ -1,5 +1,5 @@
 import React from "react";
-import { Phone, MapPin } from "lucide-react";
+import { Phone, MapPin, User } from "lucide-react";
 import { PRICING_TIERS, PROFILES_PER_PAGE } from "../utils/constants";
 
 export const ProfileGrid = ({
@@ -83,7 +83,7 @@ export const ProfileGrid = ({
                     />
                   ) : (
                     <div className="text-5xl md:text-7xl">
-                      {profile.picture}
+                      {profile.picture || "👩"}
                     </div>
                   )}
                   <div
@@ -104,23 +104,25 @@ export const ProfileGrid = ({
                   {/* Name - Clickable to view profile */}
                   <h3
                     onClick={() => onViewProfile && onViewProfile(profile)}
-                    className="text-lg md:text-xl font-bold text-gray-800 mb-1 text-center cursor-pointer hover:text-purple-600 transition"
+                    className="text-lg md:text-xl font-bold text-gray-800 mb-2 text-center cursor-pointer hover:text-purple-600 transition"
                   >
                     {profile.nickname || profile.name}
                   </h3>
 
-                  {/* Age */}
+                  {/* Age - WITH ICON */}
                   {profile.age && (
-                    <p className="text-xs md:text-sm text-gray-600 text-center mb-1">
-                      Age: {profile.age}
-                    </p>
+                    <div className="flex items-center justify-center gap-1 text-sm text-gray-600 mb-1">
+                      <User className="w-4 h-4" />
+                      <span>{profile.age} years old</span>
+                    </div>
                   )}
 
-                  {/* Location */}
+                  {/* Location - WITH ICON */}
                   {profile.location && (
-                    <p className="text-xs md:text-sm text-gray-600 flex items-center justify-center gap-1 mb-1">
-                      <MapPin className="w-3 h-3" /> {profile.location}
-                    </p>
+                    <div className="flex items-center justify-center gap-1 text-sm text-gray-600 mb-2">
+                      <MapPin className="w-4 h-4" />
+                      <span>{profile.location}</span>
+                    </div>
                   )}
 
                   {/* Tagline */}

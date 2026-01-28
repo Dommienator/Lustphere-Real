@@ -3,6 +3,21 @@ const router = express.Router();
 const Profile = require("../models/Profile");
 const User = require("../models/User");
 
+// Get profile by userId (for editing) - NEW ROUTE
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const profile = await Profile.findOne({
+      userId: req.params.userId,
+    }).populate("userId", "name nickname email");
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+    res.json({ profile });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 // Get all receiver profiles (for callers to see)
 router.get("/", async (req, res) => {
   try {

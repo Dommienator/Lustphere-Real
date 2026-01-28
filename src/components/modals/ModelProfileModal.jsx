@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { X, Upload } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Upload, Trash2 } from "lucide-react";
 import { ViewModelProfileModal } from "./ViewModelProfileModal";
 
 export const ModelProfileModal = ({
@@ -7,6 +7,7 @@ export const ModelProfileModal = ({
   onClose,
   userName,
   userNickname,
+  userEmail,
   form,
   setForm,
   handlePictureUpload,
@@ -16,7 +17,17 @@ export const ModelProfileModal = ({
   const [extraPictures, setExtraPictures] = useState(form.extraPictures || []);
   const [showPreview, setShowPreview] = useState(false);
 
+  useEffect(() => {
+    if (form.extraPictures) {
+      setExtraPictures(form.extraPictures);
+    }
+  }, [form.extraPictures]);
+
   if (!show) return null;
+
+  const handleDeleteMainPicture = () => {
+    setForm({ ...form, picturePreview: null });
+  };
 
   const handleExtraPictureUpload = (e, index) => {
     const file = e.target.files[0];
@@ -66,26 +77,47 @@ export const ModelProfileModal = ({
               </p>
               <p className="text-lg font-semibold">{userNickname}</p>
             </div>
+            <div>
+              <p className="text-sm text-gray-500">Email (cannot be changed)</p>
+              <p className="text-lg font-semibold">{userEmail}</p>
+            </div>
           </div>
 
           {/* Profile Picture */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Profile Picture
+              Profile Picture <span className="text-red-500">*</span>
             </label>
-            {form.picturePreview && (
-              <img
-                src={form.picturePreview}
-                alt="Profile"
-                className="w-32 h-32 rounded-full object-cover mx-auto mb-4 border-4 border-purple-200"
-              />
+
+            {form.picturePreview ? (
+              <div className="text-center">
+                <img
+                  src={form.picturePreview}
+                  alt="Profile"
+                  className="w-32 h-32 rounded-full object-cover mx-auto mb-3 border-4 border-purple-200"
+                />
+                <button
+                  type="button"
+                  onClick={handleDeleteMainPicture}
+                  className="flex items-center justify-center gap-2 mx-auto px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                >
+                  <Trash2 size={16} />
+                  Delete Picture
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400">
+                <Upload size={24} className="text-gray-400 mb-2" />
+                <span className="text-sm text-gray-500">Upload Picture</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePictureUpload}
+                  required
+                  className="hidden"
+                />
+              </label>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handlePictureUpload}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            />
           </div>
 
           {/* Extra Pictures (Max 3) */}
@@ -97,7 +129,7 @@ export const ModelProfileModal = ({
               {[0, 1, 2].map((index) => (
                 <div key={index} className="relative">
                   {extraPictures[index] ? (
-                    <div className="relative">
+                    <div className="relative group">
                       <img
                         src={extraPictures[index]}
                         alt={`Extra ${index + 1}`}
@@ -106,15 +138,15 @@ export const ModelProfileModal = ({
                       <button
                         type="button"
                         onClick={() => removeExtraPicture(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 shadow-lg"
                       >
                         <X size={16} />
                       </button>
                     </div>
                   ) : (
                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-400">
-                      <Upload size={24} className="text-gray-400" />
-                      <span className="text-xs text-gray-500 mt-1">Upload</span>
+                      <Upload size={20} className="text-gray-400 mb-1" />
+                      <span className="text-xs text-gray-500">Upload</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -156,7 +188,14 @@ export const ModelProfileModal = ({
           </div>
 
           {/* Buttons */}
-          <div className="flex gap-4">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition"
@@ -166,7 +205,7 @@ export const ModelProfileModal = ({
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-semibold transition"
+              className="flex-1 bg-purple-100 hover:bg-purple-200 text-purple-800 py-3 rounded-lg font-semibold transition"
             >
               View My Profile
             </button>

@@ -13,6 +13,7 @@ export const useAuth = (
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState("");
   const [userNickname, setUserNickname] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [userAge, setUserAge] = useState(null);
   const [userLocation, setUserLocation] = useState("");
   const [userTokens, setUserTokens] = useState(100);
@@ -106,6 +107,7 @@ export const useAuth = (
         setUserRole(data.user.role);
         setUserName(data.user.name);
         setUserNickname(data.user.nickname);
+        setUserEmail(data.user.email);
         setUserAge(data.user.age);
         setUserLocation(data.user.location);
         setUserTokens(data.user.tokens || 100);
@@ -120,6 +122,7 @@ export const useAuth = (
             role: data.user.role,
             name: data.user.name,
             nickname: data.user.nickname,
+            email: data.user.email,
             age: data.user.age,
             location: data.user.location,
             tokens: data.user.tokens || 100,
@@ -160,6 +163,7 @@ export const useAuth = (
     setUserRole(null);
     setUserName("");
     setUserNickname("");
+    setUserEmail("");
     setUserAge(null);
     setUserLocation("");
     localStorage.removeItem("user");
@@ -189,6 +193,7 @@ export const useAuth = (
     userRole,
     userName,
     userNickname,
+    userEmail,
     userAge,
     userLocation,
     userTokens,
@@ -196,6 +201,7 @@ export const useAuth = (
     setUserTokens,
     setTotalEarned,
     setUserNickname,
+    setUserEmail,
     setIsLoggedIn,
     setUserId,
     setUserRole,

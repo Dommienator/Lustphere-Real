@@ -1,24 +1,23 @@
 import React, { useState } from "react";
-import { X, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, MapPin, Calendar } from "lucide-react";
 
 export const ViewModelProfileModal = ({ show, onClose, profile, onCall }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   if (!show || !profile) return null;
 
-  // Combine profile picture with extra pictures
-  const allPictures = [
-    profile.picture,
-    ...(profile.extraPictures || []),
-  ].filter((pic) => pic && pic !== "👩" && pic.startsWith("data:"));
+  // Only extra pictures in slideshow (not profile picture)
+  const extraPictures = (profile.extraPictures || []).filter(
+    (pic) => pic && pic.startsWith("data:"),
+  );
 
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % allPictures.length);
+    setCurrentImageIndex((prev) => (prev + 1) % extraPictures.length);
   };
 
   const prevImage = () => {
     setCurrentImageIndex(
-      (prev) => (prev - 1 + allPictures.length) % allPictures.length,
+      (prev) => (prev - 1 + extraPictures.length) % extraPictures.length,
     );
   };
 
@@ -38,47 +37,14 @@ export const ViewModelProfileModal = ({ show, onClose, profile, onCall }) => {
           </button>
         </div>
 
-        {/* Image Slideshow */}
-        <div className="relative bg-gradient-to-br from-pink-300 to-purple-400 p-8">
-          {allPictures.length > 0 ? (
-            <>
-              <img
-                src={allPictures[currentImageIndex]}
-                alt={profile.name}
-                className="w-64 h-64 mx-auto rounded-lg object-cover border-4 border-white shadow-lg"
-              />
-
-              {allPictures.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full"
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full"
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-
-                  {/* Image indicators */}
-                  <div className="flex justify-center gap-2 mt-4">
-                    {allPictures.map((_, idx) => (
-                      <div
-                        key={idx}
-                        className={`w-2 h-2 rounded-full ${
-                          idx === currentImageIndex
-                            ? "bg-white"
-                            : "bg-white bg-opacity-50"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </>
+        {/* Profile Picture - Separate from slideshow */}
+        <div className="bg-gradient-to-br from-pink-300 to-purple-400 p-8">
+          {profile.picture && profile.picture.startsWith("data:") ? (
+            <img
+              src={profile.picture}
+              alt={profile.name}
+              className="w-64 h-64 mx-auto rounded-lg object-cover border-4 border-white shadow-lg"
+            />
           ) : (
             <div className="text-7xl text-center">
               {profile.picture || "👩"}
@@ -89,38 +55,87 @@ export const ViewModelProfileModal = ({ show, onClose, profile, onCall }) => {
         {/* Profile Details */}
         <div className="p-6 space-y-4">
           {profile.age && (
-            <div>
-              <p className="text-sm text-gray-500">Age</p>
-              <p className="text-lg font-semibold">{profile.age}</p>
+            <div className="flex items-center gap-2">
+              <Calendar size={20} className="text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-500">Age</p>
+                <p className="text-lg font-semibold">{profile.age} years old</p>
+              </div>
             </div>
           )}
 
           {profile.location && (
-            <div>
-              <p className="text-sm text-gray-500">Location</p>
-              <p className="text-lg font-semibold flex items-center gap-2">
-                <MapPin size={18} /> {profile.location}
-              </p>
+            <div className="flex items-center gap-2">
+              <MapPin size={20} className="text-purple-600" />
+              <div>
+                <p className="text-sm text-gray-500">Location</p>
+                <p className="text-lg font-semibold">{profile.location}</p>
+              </div>
             </div>
           )}
 
           {profile.tagline && (
             <div>
-              <p className="text-sm text-gray-500">About</p>
+              <p className="text-sm text-gray-500 mb-1">About Me</p>
               <p className="text-lg italic text-purple-600">
                 "{profile.tagline}"
               </p>
             </div>
           )}
 
+          {/* Extra Pictures Slideshow */}
+          {extraPictures.length > 0 && (
+            <div className="mt-6">
+              <p className="text-sm text-gray-500 mb-3">More Photos</p>
+              <div className="relative bg-gray-100 rounded-lg p-4">
+                <img
+                  src={extraPictures[currentImageIndex]}
+                  alt={`Photo ${currentImageIndex + 1}`}
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+
+                {extraPictures.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-6 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full shadow-lg"
+                    >
+                      <ChevronLeft size={24} />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 hover:bg-opacity-100 p-2 rounded-full shadow-lg"
+                    >
+                      <ChevronRight size={24} />
+                    </button>
+
+                    {/* Image indicators */}
+                    <div className="flex justify-center gap-2 mt-4">
+                      {extraPictures.map((_, idx) => (
+                        <div
+                          key={idx}
+                          className={`w-2 h-2 rounded-full ${
+                            idx === currentImageIndex
+                              ? "bg-purple-600"
+                              : "bg-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Call Button */}
-          {profile.isOnline && (
+          {profile.isOnline && onCall && (
             <button
               onClick={() => {
                 onClose();
                 onCall(profile);
               }}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition"
+              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition mt-6"
             >
               📞 Video Call
             </button>
