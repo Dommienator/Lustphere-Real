@@ -19,8 +19,8 @@ export const ProfileEditModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full">
-        <div className="flex justify-between items-center p-6 border-b">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold text-gray-800">Edit Profile</h2>
           <button
             onClick={onClose}
@@ -108,10 +108,15 @@ export const ProfileEditModal = ({
               placeholder="e.g., Nairobi, Kenya"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
+            {form.location && (
+              <p className="text-xs text-gray-500 mt-1">
+                Current: {form.location}
+              </p>
+            )}
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3">
+          {/* Buttons - Sticky at bottom */}
+          <div className="flex gap-3 sticky bottom-0 bg-white pt-4 pb-2">
             <button
               type="button"
               onClick={onClose}

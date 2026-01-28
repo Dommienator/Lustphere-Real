@@ -584,6 +584,17 @@ export default function VideoDatingPlatform() {
     try {
       console.log("🟢 Model accepting call:", incomingCall.id);
 
+      // REQUEST PERMISSIONS FIRST
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        console.log("✅ Camera and mic permissions granted");
+      } catch (permErr) {
+        console.error("❌ Permission denied:", permErr);
+        showNotification("Please allow camera and microphone access", "error");
+        setIncomingCall(null);
+        return;
+      }
+
       // CLOSE any existing tracks first
       if (localTrack) {
         if (localTrack.videoTrack) {

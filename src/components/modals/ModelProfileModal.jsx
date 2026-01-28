@@ -52,7 +52,7 @@ export const ModelProfileModal = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b">
+        <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
           <button
             onClick={onClose}
@@ -81,6 +81,12 @@ export const ModelProfileModal = ({
               <p className="text-sm text-gray-500">Email (cannot be changed)</p>
               <p className="text-lg font-semibold">{userEmail}</p>
             </div>
+            {form.age && (
+              <div>
+                <p className="text-sm text-gray-500">Age (cannot be changed)</p>
+                <p className="text-lg font-semibold">{form.age} years old</p>
+              </div>
+            )}
           </div>
 
           {/* Profile Picture */}
@@ -172,6 +178,11 @@ export const ModelProfileModal = ({
               placeholder="e.g., Nairobi, Kenya"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
+            {form.location && (
+              <p className="text-xs text-gray-500 mt-1">
+                Current: {form.location}
+              </p>
+            )}
           </div>
 
           <div>
@@ -185,10 +196,15 @@ export const ModelProfileModal = ({
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
+            {form.tagline && (
+              <p className="text-xs text-gray-500 mt-1">
+                Current: "{form.tagline}"
+              </p>
+            )}
           </div>
 
-          {/* Buttons */}
-          <div className="flex gap-3">
+          {/* Buttons - Sticky at bottom */}
+          <div className="flex gap-3 sticky bottom-0 bg-white pt-4 pb-2">
             <button
               type="button"
               onClick={onClose}
@@ -213,7 +229,7 @@ export const ModelProfileModal = ({
 
           {/* Call History */}
           {callHistory && callHistory.length > 0 && (
-            <div>
+            <div className="pb-4">
               <h3 className="text-lg font-semibold mb-3">Recent Calls</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {callHistory.slice(0, 5).map((call, idx) => (

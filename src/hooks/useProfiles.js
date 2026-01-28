@@ -1,93 +1,76 @@
 import { useState } from "react";
-import { profileAPI } from "../services/api";
+import { API_URL } from "../utils/constants";
 
 export const useProfiles = () => {
   const [profiles, setProfiles] = useState([]);
-  const [onlineCount, setOnlineCount] = useState({ clients: 0, models: 0 });
+  const [onlineCount, setOnlineCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const fetchProfiles = async () => {
     setLoading(true);
     try {
-      const response = await profileAPI.getAll();
+      const response = await fetch(`${API_URL}/profiles`);
       const data = await response.json();
-
-      // Backend now returns { profiles: [...], onlineCount: 5 }
-      if (data.profiles && Array.isArray(data.profiles)) {
-        const online = data.profiles.filter((p) => p.isOnline);
-        const offline = data.profiles.filter((p) => !p.isOnline);
-
-        // Online first, then offline
-        setProfiles([...online, ...offline]);
-
-        setOnlineCount({
-          models: data.onlineCount, // Real count from backend
-          clients: online.length * 2, // Estimate: assume 2 clients per online model
-        });
-      } else if (Array.isArray(data)) {
-        // Fallback for old format
-        setProfiles(data);
-        const onlineModels = data.filter(
-          (p) => p.isOnline || p.userId?.isOnline
-        ).length;
-        setOnlineCount({
-          models: onlineModels,
-          clients: onlineModels * 2,
-        });
-      } else {
-        setProfiles([]);
-        setOnlineCount({ models: 0, clients: 0 });
-      }
+      setProfiles(data.profiles || []);
+      setOnlineCount(data.onlineCount || 0);
     } catch (error) {
-      console.error("Fetch profiles error:", error);
-      setProfiles([]);
-      setOnlineCount({ models: 0, clients: 0 });
+      console.error("Error fetching profiles:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const updateProfile = async (userId, data, showNotification) => {
+  const updateProfile = async (userId, profileData, showNotification) => {
     try {
-      const response = await profileAPI.update({
-        userId,
-        nickname: data.nickname,
-        tagline: data.tagline,
-        picture: data.picture,
+      const response = await fetch(`${API_URL}/profiles/update`, {
+        // FIXED: Added 's'
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, ...profileData }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
       if (response.ok) {
-        showNotification("✅ Profile updated!", "success");
-        fetchProfiles();
-        return { success: true };
+        showNotification("Profile updated successfully!", "success");
+        return { success: true, data };
       } else {
-        showNotification(result.message || "Update failed", "error");
+        showNotification(data.message || "Failed to update profile", "error");
         return { success: false };
       }
     } catch (error) {
-      showNotification("Update failed", "error");
+      showNotification("Network error while updating profile", "error");
+      console.error("Update profile error:", error);
       return { success: false };
     }
   };
 
-  const updatePaymentMethod = async (userId, method, showNotification) => {
+  const updatePaymentMethod = async (
+    userId,
+    paymentMethod,
+    showNotification,
+  ) => {
     try {
-      const response = await profileAPI.updatePaymentMethod({
-        userId,
-        paymentMethod: method,
+      const response = await fetch(`${API_URL}/auth/payment-method`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, paymentMethod }),
       });
+
       const data = await response.json();
 
       if (response.ok) {
-        showNotification("✅ Payment method updated!", "success");
-        return { success: true };
+        showNotification("Payment method updated!", "success");
+        return { success: true, data };
       } else {
-        showNotification(data.message || "Update failed", "error");
+        showNotification(
+          data.message || "Failed to update payment method",
+          "error",
+        );
         return { success: false };
       }
     } catch (error) {
-      showNotification("Update failed", "error");
+      showNotification("Network error", "error");
       return { success: false };
     }
   };
