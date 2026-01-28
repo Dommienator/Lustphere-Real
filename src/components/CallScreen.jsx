@@ -1,4 +1,5 @@
 import React from "react";
+import { Phone, Gift } from "lucide-react";
 
 export const CallScreen = ({
   activeCall,
@@ -17,68 +18,61 @@ export const CallScreen = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const getStatusText = () => {
+    if (callStatus === "ringing") return "📞 Ringing...";
+    if (callStatus === "connecting") return "🔄 Connecting...";
+    if (callStatus === "connected") return "✅ Call in Progress";
+    return "";
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-900 to-purple-900 relative">
-      {/* Remote Video - Full Screen */}
-      <div className="w-full h-screen bg-black">
-        <div ref={remoteVideoRef} className="w-full h-full"></div>
-      </div>
-
-      {/* Local Video - Picture in Picture */}
-      <div className="absolute top-4 right-4 w-32 h-24 md:w-48 md:h-36 bg-black rounded-lg overflow-hidden shadow-2xl z-10 border-2 border-white">
-        <div ref={localVideoRef} className="w-full h-full"></div>
-        <div className="absolute bottom-2 left-2 text-white text-xs md:text-sm bg-black bg-opacity-50 px-2 py-1 rounded">
-          You
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-4 flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-bold">
+            {activeCall?.name || activeCall?.nickname || "In Call"}
+          </h2>
+          <p className="text-sm opacity-90">{getStatusText()}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold">{formatTime(callDuration)}</p>
+          {userRole === "client" && (
+            <p className="text-sm opacity-90">Tokens: {userTokens}</p>
+          )}
         </div>
       </div>
 
-      {/* Call Status - Shows when ringing or connecting */}
-      {callStatus && callStatus !== "connected" && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-6 py-3 rounded-full z-20 text-lg font-semibold shadow-lg">
-          {callStatus === "ringing" && "📞 Ringing..."}
-          {callStatus === "connecting" && "🔄 Connecting..."}
+      {/* Video Container */}
+      <div className="flex-1 relative bg-gray-900">
+        {/* Remote Video (Other Person) - LARGER */}
+        <div className="absolute inset-0">
+          <div ref={remoteVideoRef} className="w-full h-full bg-gray-800" />
         </div>
-      )}
 
-      {/* Call Info - Top Left */}
-      <div className="absolute top-4 left-4 text-white z-10 bg-black bg-opacity-50 px-4 py-3 rounded-lg">
-        <h2 className="text-xl md:text-2xl font-bold mb-1">
-          {activeCall?.nickname || activeCall?.name || "Unknown"}
-        </h2>
-        <div className="text-lg md:text-xl font-mono">
-          {formatTime(callDuration)}
+        {/* Local Video (You) - SMALLER, Picture-in-Picture */}
+        <div className="absolute top-4 right-4 w-48 h-36 bg-gray-700 rounded-lg overflow-hidden border-2 border-white shadow-lg z-10">
+          <div ref={localVideoRef} className="w-full h-full" />
         </div>
-        {userRole === "client" && (
-          <div className="mt-2 text-sm md:text-base">
-            💎 Tokens: {userTokens}
-          </div>
-        )}
-        {userRole === "model" && (
-          <div className="mt-2 text-sm md:text-base text-green-300">
-            💰 Earning...
-          </div>
-        )}
       </div>
 
-      {/* Controls - Bottom Center */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-10">
-        {/* Gift button (clients only) */}
+      {/* Controls */}
+      <div className="bg-gray-900 p-6 flex justify-center gap-4">
         {userRole === "client" && (
           <button
             onClick={onGiftClick}
-            className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white p-4 rounded-full shadow-lg transition transform hover:scale-110"
-            title="Send Gift"
+            className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-3 rounded-full font-semibold flex items-center gap-2 transition"
           >
-            <span className="text-2xl">🎁</span>
+            <Gift size={20} />
+            Send Gift
           </button>
         )}
-
-        {/* End Call button */}
         <button
-          onClick={onEndCall}
-          className="bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-full shadow-lg font-semibold text-lg transition transform hover:scale-105"
+          onClick={() => onEndCall("self")}
+          className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-full font-semibold flex items-center gap-2 transition"
         >
-          📞 End Call
+          <Phone size={20} />
+          End Call
         </button>
       </div>
     </div>

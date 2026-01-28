@@ -63,30 +63,46 @@ export const ModelProfileModal = ({
         </div>
 
         <form onSubmit={onSave} className="p-6 space-y-6">
-          {/* Non-editable info */}
-          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-            <div>
-              <p className="text-sm text-gray-500">
-                Full Name (cannot be changed)
-              </p>
-              <p className="text-lg font-semibold">{userName}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">
-                Nickname (cannot be changed)
-              </p>
-              <p className="text-lg font-semibold">{userNickname}</p>
-            </div>
+          {/* Email - Non-editable */}
+          <div className="bg-gray-50 p-4 rounded-lg">
             <div>
               <p className="text-sm text-gray-500">Email (cannot be changed)</p>
               <p className="text-lg font-semibold">{userEmail}</p>
             </div>
             {form.age && (
-              <div>
+              <div className="mt-2">
                 <p className="text-sm text-gray-500">Age (cannot be changed)</p>
                 <p className="text-lg font-semibold">{form.age} years old</p>
               </div>
             )}
+          </div>
+
+          {/* Full Name - Editable */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={form.name || userName || ""}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Your full name"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+            />
+          </div>
+
+          {/* Nickname - Editable */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Nickname (Display Name)
+            </label>
+            <input
+              type="text"
+              value={form.nickname || userNickname || ""}
+              onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+              placeholder="Your nickname"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+            />
           </div>
 
           {/* Profile Picture */}
@@ -178,11 +194,6 @@ export const ModelProfileModal = ({
               placeholder="e.g., Nairobi, Kenya"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
-            {form.location && (
-              <p className="text-xs text-gray-500 mt-1">
-                Current: {form.location}
-              </p>
-            )}
           </div>
 
           <div>
@@ -196,11 +207,6 @@ export const ModelProfileModal = ({
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
-            {form.tagline && (
-              <p className="text-xs text-gray-500 mt-1">
-                Current: "{form.tagline}"
-              </p>
-            )}
           </div>
 
           {/* Buttons - Sticky at bottom */}
@@ -255,7 +261,7 @@ export const ModelProfileModal = ({
             onClose={() => setShowPreview(false)}
             profile={{
               name: userName,
-              nickname: userNickname,
+              nickname: form.nickname || userNickname,
               picture: form.picturePreview,
               extraPictures: extraPictures,
               location: form.location,

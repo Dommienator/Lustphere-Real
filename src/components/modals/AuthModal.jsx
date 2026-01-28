@@ -68,7 +68,7 @@ export const AuthModal = ({
 
           {authMode === "signup" && (
             <>
-              {/* Full Name (both client and model) */}
+              {/* Full Name (EVERYONE - both client and model) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Full Name
@@ -86,7 +86,7 @@ export const AuthModal = ({
               {/* Nickname */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nickname
+                  Nickname (Display Name)
                 </label>
                 <input
                   type="text"
@@ -95,7 +95,7 @@ export const AuthModal = ({
                   onChange={(e) =>
                     setForm({ ...form, nickname: e.target.value })
                   }
-                  placeholder="Display name"
+                  placeholder="How you want to be called"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 />
               </div>
@@ -192,6 +192,11 @@ export const AuthModal = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
+              {authMode === "signup" && (
+                <span className="text-red-500 text-xs ml-2">
+                  (Cannot be changed later)
+                </span>
+              )}
             </label>
             <input
               type="email"

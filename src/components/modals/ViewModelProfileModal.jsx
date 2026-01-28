@@ -37,18 +37,16 @@ export const ViewModelProfileModal = ({ show, onClose, profile, onCall }) => {
           </button>
         </div>
 
-        {/* Profile Picture - Separate from slideshow */}
-        <div className="bg-gradient-to-br from-pink-300 to-purple-400 p-8">
+        {/* Profile Picture - Just a circle, no box */}
+        <div className="p-8 text-center">
           {profile.picture && profile.picture.startsWith("data:") ? (
             <img
               src={profile.picture}
               alt={profile.name}
-              className="w-64 h-64 mx-auto rounded-lg object-cover border-4 border-white shadow-lg"
+              className="w-48 h-48 mx-auto rounded-full object-cover border-4 border-purple-300 shadow-lg"
             />
           ) : (
-            <div className="text-7xl text-center">
-              {profile.picture || "👩"}
-            </div>
+            <div className="text-7xl">{profile.picture || "👩"}</div>
           )}
         </div>
 

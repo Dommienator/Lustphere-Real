@@ -3,7 +3,7 @@ const router = express.Router();
 const Profile = require("../models/Profile");
 const User = require("../models/User");
 
-// Get profile by userId (for editing) - NEW ROUTE
+// Get profile by userId (for editing)
 router.get("/user/:userId", async (req, res) => {
   try {
     const profile = await Profile.findOne({
@@ -27,24 +27,26 @@ router.get("/", async (req, res) => {
       "name email nickname isOnline",
     );
 
-    // Map profiles to include isOnline at root level for easier access
+    // Map profiles to include ALL fields including age and location
     const profilesWithStatus = profiles.map((profile) => ({
       _id: profile._id,
       name: profile.name,
-      nickname: profile.userId?.nickname || profile.name,
+      nickname: profile.userId?.nickname || profile.nickname || profile.name,
       picture: profile.picture,
       extraPictures: profile.extraPictures || [],
-      age: profile.age,
+      age: profile.age, // THIS WAS MISSING OR NOT BEING SENT
+      location: profile.location, // THIS WAS MISSING OR NOT BEING SENT
+      tagline: profile.tagline,
       verified: profile.verified,
       userId: profile.userId?._id,
       isOnline: profile.userId?.isOnline || false,
-      location: profile.location,
-      tagline: profile.tagline,
       createdAt: profile.createdAt,
     }));
 
     // Count how many are actually online
     const onlineCount = profilesWithStatus.filter((p) => p.isOnline).length;
+
+    console.log("Profiles being sent:", profilesWithStatus); // DEBUG
 
     res.json({
       profiles: profilesWithStatus,
@@ -72,14 +74,31 @@ router.get("/:id", async (req, res) => {
 // Update profile
 router.put("/update", async (req, res) => {
   try {
-    const { userId, nickname, tagline, location, picture, extraPictures } =
-      req.body;
+    const {
+      userId,
+      name,
+      nickname,
+      tagline,
+      location,
+      picture,
+      extraPictures,
+    } = req.body;
 
     const profile = await Profile.findOne({ userId });
     if (!profile) {
       return res.status(404).json({ message: "Profile not found" });
     }
 
+    // Also update User model for name and nickname
+    if (name || nickname) {
+      await User.findByIdAndUpdate(userId, {
+        ...(name && { name }),
+        ...(nickname && { nickname }),
+      });
+    }
+
+    // Update Profile model
+    if (name) profile.name = name;
     if (nickname) profile.nickname = nickname;
     if (tagline !== undefined) profile.tagline = tagline;
     if (location !== undefined) profile.location = location;
