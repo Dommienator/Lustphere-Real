@@ -13,6 +13,8 @@ export const useAuth = (
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState("");
   const [userNickname, setUserNickname] = useState("");
+  const [userAge, setUserAge] = useState(null);
+  const [userLocation, setUserLocation] = useState("");
   const [userTokens, setUserTokens] = useState(100);
   const [totalEarned, setTotalEarned] = useState(0);
 
@@ -104,6 +106,8 @@ export const useAuth = (
         setUserRole(data.user.role);
         setUserName(data.user.name);
         setUserNickname(data.user.nickname);
+        setUserAge(data.user.age);
+        setUserLocation(data.user.location);
         setUserTokens(data.user.tokens || 100);
         setTotalEarned(data.user.totalEarned || 0);
         setIsLoggedIn(true);
@@ -116,6 +120,8 @@ export const useAuth = (
             role: data.user.role,
             name: data.user.name,
             nickname: data.user.nickname,
+            age: data.user.age,
+            location: data.user.location,
             tokens: data.user.tokens || 100,
             totalEarned: data.user.totalEarned || 0,
           }),
@@ -141,7 +147,6 @@ export const useAuth = (
   };
 
   const logout = async () => {
-    // Notify backend
     if (userId) {
       try {
         await authAPI.logout({ userId });
@@ -155,6 +160,8 @@ export const useAuth = (
     setUserRole(null);
     setUserName("");
     setUserNickname("");
+    setUserAge(null);
+    setUserLocation("");
     localStorage.removeItem("user");
   };
 
@@ -182,6 +189,8 @@ export const useAuth = (
     userRole,
     userName,
     userNickname,
+    userAge,
+    userLocation,
     userTokens,
     totalEarned,
     setUserTokens,
@@ -191,6 +200,8 @@ export const useAuth = (
     setUserId,
     setUserRole,
     setUserName,
+    setUserAge,
+    setUserLocation,
     signup,
     login,
     logout,

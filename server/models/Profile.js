@@ -1,14 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const profileSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   name: { type: String, required: true },
-  picture: { type: String, default: '👩' },
+  nickname: { type: String },
+  picture: { type: String, default: "👩" },
+  extraPictures: [{ type: String }], // Array of up to 3 extra pictures
   age: { type: Number },
-  bodyShape: { type: String },
-  personality: { type: String },
-  interests: { type: String },
+  location: { type: String },
+  tagline: { type: String },
   verified: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
 });
-module.exports = mongoose.model('Profile', profileSchema);
+
+module.exports = mongoose.model("Profile", profileSchema);

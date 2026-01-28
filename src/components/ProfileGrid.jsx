@@ -10,12 +10,13 @@ export const ProfileGrid = ({
   setCurrentPage,
   onTokenPurchase,
   onStartCall,
+  onViewProfile,
 }) => {
   const totalPages = Math.ceil(profiles.length / PROFILES_PER_PAGE);
   const startIdx = (currentPage - 1) * PROFILES_PER_PAGE;
   const displayedProfiles = profiles.slice(
     startIdx,
-    startIdx + PROFILES_PER_PAGE
+    startIdx + PROFILES_PER_PAGE,
   );
 
   return (
@@ -25,16 +26,18 @@ export const ProfileGrid = ({
         <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
           💎 Token Packages - 1 Token = KSh 23
         </h2>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {PRICING_TIERS.map((tier, idx) => (
             <button
               key={idx}
               onClick={() => onTokenPurchase(tier)}
-              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white rounded-xl p-6 text-center hover:scale-105 transition cursor-pointer"
+              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white rounded-xl p-4 md:p-6 text-center hover:scale-105 transition cursor-pointer"
             >
-              <div className="text-4xl font-bold mb-2">{tier.tokens}</div>
+              <div className="text-3xl md:text-4xl font-bold mb-2">
+                {tier.tokens}
+              </div>
               <div className="text-sm mb-2 opacity-90">Tokens</div>
-              <div className="text-2xl font-bold mb-2">
+              <div className="text-xl md:text-2xl font-bold mb-2">
                 KSh {tier.price.toLocaleString()}
               </div>
               <div className="text-xs opacity-80 mb-2">
@@ -65,21 +68,23 @@ export const ProfileGrid = ({
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
             {displayedProfiles.map((profile) => (
               <div
                 key={profile._id}
                 className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:scale-105"
               >
-                <div className="bg-gradient-to-br from-pink-300 to-purple-400 p-6 text-center relative">
+                <div className="bg-gradient-to-br from-pink-300 to-purple-400 p-4 md:p-6 text-center relative">
                   {profile.picture && profile.picture.startsWith("data:") ? (
                     <img
                       src={profile.picture}
                       alt={profile.name}
-                      className="w-24 h-24 rounded-full mx-auto border-4 border-white object-cover"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto border-4 border-white object-cover"
                     />
                   ) : (
-                    <div className="text-7xl">{profile.picture}</div>
+                    <div className="text-5xl md:text-7xl">
+                      {profile.picture}
+                    </div>
                   )}
                   <div
                     className={`absolute top-2 right-2 flex items-center gap-1 ${
@@ -96,26 +101,51 @@ export const ProfileGrid = ({
                 </div>
 
                 <div className="p-4">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
+                  {/* Name - Clickable to view profile */}
+                  <h3
+                    onClick={() => onViewProfile && onViewProfile(profile)}
+                    className="text-lg md:text-xl font-bold text-gray-800 mb-1 text-center cursor-pointer hover:text-purple-600 transition"
+                  >
                     {profile.nickname || profile.name}
                   </h3>
+
+                  {/* Age */}
+                  {profile.age && (
+                    <p className="text-xs md:text-sm text-gray-600 text-center mb-1">
+                      Age: {profile.age}
+                    </p>
+                  )}
+
+                  {/* Location */}
                   {profile.location && (
-                    <p className="text-sm text-gray-600 flex items-center gap-1 mb-2">
+                    <p className="text-xs md:text-sm text-gray-600 flex items-center justify-center gap-1 mb-1">
                       <MapPin className="w-3 h-3" /> {profile.location}
                     </p>
                   )}
+
+                  {/* Tagline */}
                   {profile.tagline && (
-                    <p className="text-sm text-gray-600 italic mb-3">
+                    <p className="text-xs md:text-sm text-purple-600 italic mb-3 text-center line-clamp-2">
                       "{profile.tagline}"
                     </p>
                   )}
 
+                  {/* Call Button */}
                   <button
                     onClick={() => onStartCall(profile)}
-                    className="w-full bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition flex items-center justify-center gap-2"
+                    disabled={!profile.isOnline && isLoggedIn}
+                    className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
+                      !profile.isOnline && isLoggedIn
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 text-white hover:shadow-lg"
+                    }`}
                   >
                     <Phone className="w-4 h-4" />
-                    {isLoggedIn ? "Video Call" : "Login to Call"}
+                    {!isLoggedIn
+                      ? "Login to Call"
+                      : profile.isOnline
+                        ? "Video Call"
+                        : "Offline"}
                   </button>
                 </div>
               </div>
@@ -124,7 +154,7 @@ export const ProfileGrid = ({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 flex-wrap">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (page) => (
                   <button
@@ -138,7 +168,7 @@ export const ProfileGrid = ({
                   >
                     {page}
                   </button>
-                )
+                ),
               )}
             </div>
           )}

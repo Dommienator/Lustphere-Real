@@ -18,10 +18,8 @@ router.get("/", async (req, res) => {
       name: profile.name,
       nickname: profile.userId?.nickname || profile.name,
       picture: profile.picture,
+      extraPictures: profile.extraPictures || [],
       age: profile.age,
-      bodyShape: profile.bodyShape,
-      personality: profile.personality,
-      interests: profile.interests,
       verified: profile.verified,
       userId: profile.userId?._id,
       isOnline: profile.userId?.isOnline || false,
@@ -56,20 +54,43 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// Update profile
+router.put("/update", async (req, res) => {
+  try {
+    const { userId, nickname, tagline, location, picture, extraPictures } =
+      req.body;
+
+    const profile = await Profile.findOne({ userId });
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    if (nickname) profile.nickname = nickname;
+    if (tagline !== undefined) profile.tagline = tagline;
+    if (location !== undefined) profile.location = location;
+    if (picture) profile.picture = picture;
+    if (extraPictures !== undefined) profile.extraPictures = extraPictures;
+
+    await profile.save();
+
+    res.json({ message: "Profile updated", profile });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+
 // Create profile (for receivers)
 router.post("/", async (req, res) => {
   try {
-    const { userId, name, age, bodyShape, personality, interests, image } =
-      req.body;
+    const { userId, name, age, location, tagline, picture } = req.body;
 
     const profile = new Profile({
       userId,
       name,
       age,
-      bodyShape,
-      personality,
-      interests,
-      image,
+      location,
+      tagline,
+      picture,
     });
 
     await profile.save();

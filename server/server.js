@@ -19,32 +19,42 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
 
-// Import Routes - ALL IMPORTS FIRST
+// Import Routes
 const authRoutes = require("./routes/auth");
 const profileRoutes = require("./routes/profiles");
 const agoraRoutes = require("./routes/agora");
 const callHistoryRoutes = require("./routes/calls");
 const earningsRoutes = require("./routes/earnings");
 
-// Use Routes - ALL app.use() AFTER IMPORTS
+// Use Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/profiles", profileRoutes);
 app.use("/api/agora", agoraRoutes);
 app.use("/api/calls", callHistoryRoutes);
 app.use("/api/earnings", earningsRoutes);
 
-// In-memory call store (temporary - should move to database)
+// In-memory call store
 global.activeCalls = [];
 
-// Create call notification
+// Create call notification - WITH CALLER INFO
 app.post("/api/calls/create", (req, res) => {
-  const { callerId, receiverId, channelName } = req.body;
+  const {
+    callerId,
+    receiverId,
+    channelName,
+    callerName,
+    callerAge,
+    callerLocation,
+  } = req.body;
 
   const call = {
     id: Date.now().toString(),
     callerId,
     receiverId,
     channelName,
+    callerName: callerName || "Client",
+    callerAge,
+    callerLocation,
     status: "pending",
     createdAt: new Date(),
   };

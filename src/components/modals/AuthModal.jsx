@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 export const AuthModal = ({
   show,
@@ -34,55 +35,7 @@ export const AuthModal = ({
           onSubmit={authMode === "login" ? onLogin : onSignup}
           className="space-y-4"
         >
-          {/* Email */}
-          <input
-            type="email"
-            placeholder="Email *"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-            required
-          />
-
-          {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder={
-                authMode === "signup"
-                  ? "Password (8+ chars, 1 uppercase, 1 number, 1 special) *"
-                  : "Password *"
-              }
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              autoComplete="new-password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-              required
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-purple-600 hover:text-purple-800"
-            >
-              {showPassword ? "Hide" : "Show"}
-            </button>
-          </div>
-
-          {/* Confirm Password (Signup only) */}
-          {authMode === "signup" && (
-            <input
-              type="password"
-              placeholder="Confirm Password *"
-              value={form.confirmPassword}
-              onChange={(e) =>
-                setForm({ ...form, confirmPassword: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-              required
-            />
-          )}
-
-          {/* Role Selection - BUTTONS not dropdown */}
+          {/* Role Selection - FIRST */}
           {authMode === "signup" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -115,7 +68,7 @@ export const AuthModal = ({
             </div>
           )}
 
-          {/* Login - Show role buttons */}
+          {/* Login role selection */}
           {authMode === "login" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -148,10 +101,18 @@ export const AuthModal = ({
             </div>
           )}
 
-          {/* Signup Fields */}
-          {authMode === "signup" && form.role && (
+          {/* Model fields - BEFORE email/password */}
+          {authMode === "signup" && form.role === "model" && (
             <>
-              {/* Nickname - For BOTH */}
+              <input
+                type="text"
+                placeholder="Full Name *"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                required
+              />
+
               <input
                 type="text"
                 placeholder="Nickname *"
@@ -161,7 +122,16 @@ export const AuthModal = ({
                 required
               />
 
-              {/* Location - For BOTH */}
+              <input
+                type="number"
+                placeholder="Age (18+) *"
+                value={form.age}
+                onChange={(e) => setForm({ ...form, age: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                required
+                min="18"
+              />
+
               <input
                 type="text"
                 placeholder="Location (e.g., Nairobi, Kenya) *"
@@ -171,75 +141,136 @@ export const AuthModal = ({
                 required
               />
 
-              {/* Model-specific fields */}
-              {form.role === "model" && (
-                <>
-                  <input
-                    type="text"
-                    placeholder="Full Name *"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    required
-                  />
+              <input
+                type="text"
+                placeholder="Tagline (e.g., 'Fun and adventurous!')"
+                value={form.tagline}
+                onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
 
-                  <input
-                    type="number"
-                    placeholder="Age (18+) *"
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    required
-                    min="18"
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Profile Picture *
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePictureUpload}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  required
+                />
+                {form.picturePreview && (
+                  <img
+                    src={form.picturePreview}
+                    alt="Preview"
+                    className="mt-2 w-24 h-24 rounded-full object-cover mx-auto"
                   />
-
-                  <input
-                    type="text"
-                    placeholder="Tagline (e.g., 'Fun and adventurous!')"
-                    value={form.tagline}
-                    onChange={(e) =>
-                      setForm({ ...form, tagline: e.target.value })
-                    }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Profile Picture *
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePictureUpload}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                      required
-                    />
-                    {form.picturePreview && (
-                      <img
-                        src={form.picturePreview}
-                        alt="Preview"
-                        className="mt-2 w-24 h-24 rounded-full object-cover mx-auto"
-                      />
-                    )}
-                  </div>
-                </>
-              )}
+                )}
+              </div>
             </>
           )}
 
+          {/* Client fields - BEFORE email/password */}
+          {authMode === "signup" && form.role === "client" && (
+            <>
+              <input
+                type="text"
+                placeholder="Nickname *"
+                value={form.nickname}
+                onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Location (e.g., Nairobi, Kenya) *"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                required
+              />
+            </>
+          )}
+
+          {/* Email - AFTER name/nickname */}
+          <input
+            type="email"
+            placeholder="Email *"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+            required
+          />
+
+          {/* Password with EYE ICON */}
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder={
+                authMode === "signup"
+                  ? "Password (8+ chars, 1 uppercase, 1 number, 1 special) *"
+                  : "Password *"
+              }
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              autoComplete="new-password"
+              className="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          {/* Confirm Password (Signup only) */}
+          {authMode === "signup" && (
+            <input
+              type="password"
+              placeholder="Confirm Password *"
+              value={form.confirmPassword}
+              onChange={(e) =>
+                setForm({ ...form, confirmPassword: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              required
+            />
+          )}
+
+          {/* Age Confirmation - FOR BOTH LOGIN AND SIGNUP */}
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={form.ageConfirmed || false}
+              onChange={(e) =>
+                setForm({ ...form, ageConfirmed: e.target.checked })
+              }
+              className="w-4 h-4 mt-1"
+              required
+            />
+            <span className="text-sm text-gray-600">
+              I confirm I am 18 years or older *
+            </span>
+          </label>
+
           {/* Terms Agreement */}
-          <label className="flex items-center gap-2">
+          <label className="flex items-start gap-2">
             <input
               type="checkbox"
               checked={form.agreedToTerms}
               onChange={(e) =>
                 setForm({ ...form, agreedToTerms: e.target.checked })
               }
-              className="w-4 h-4"
+              className="w-4 h-4 mt-1"
               required
             />
             <span className="text-sm text-gray-600">
-              I agree to the terms and conditions
+              I agree to the terms and conditions *
             </span>
           </label>
 

@@ -33,6 +33,7 @@ import { SafetyWarningModal } from "./components/modals/SafetyWarningModal";
 import { IncomingCallModal } from "./components/modals/IncomingCallModal";
 import { GiftModal } from "./components/modals/GiftModal";
 import { CallEndedModal } from "./components/modals/CallEndedModal";
+import { ViewModelProfileModal } from "./components/modals/ViewModelProfileModal";
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
@@ -84,6 +85,8 @@ export default function VideoDatingPlatform() {
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [showCallEndedModal, setShowCallEndedModal] = useState(false);
   const [callEndedData, setCallEndedData] = useState(null);
+  const [showViewModelProfile, setShowViewModelProfile] = useState(false);
+  const [selectedModelProfile, setSelectedModelProfile] = useState(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -97,7 +100,9 @@ export default function VideoDatingPlatform() {
     tagline: "",
     location: "",
     picturePreview: null,
+    extraPictures: [],
     agreedToTerms: false,
+    ageConfirmed: false,
     paymentMethod: "mpesa",
   });
   const [verificationCode, setVerificationCode] = useState("");
@@ -188,6 +193,8 @@ export default function VideoDatingPlatform() {
       auth.setUserRole(userData.role);
       auth.setUserName(userData.name);
       auth.setUserNickname(userData.nickname);
+      auth.setUserAge(userData.age);
+      auth.setUserLocation(userData.location);
       auth.setUserTokens(userData.tokens);
       auth.setTotalEarned(userData.totalEarned);
       auth.setIsLoggedIn(true);
@@ -210,6 +217,8 @@ export default function VideoDatingPlatform() {
     e.preventDefault();
     if (!form.agreedToTerms)
       return showNotification("Please agree to terms", "error");
+    if (!form.ageConfirmed)
+      return showNotification("Please confirm you are 18+", "error");
     if (form.age && parseInt(form.age) < 18)
       return showNotification("Must be 18+", "error");
 
@@ -225,6 +234,8 @@ export default function VideoDatingPlatform() {
     e.preventDefault();
     if (!form.agreedToTerms)
       return showNotification("Please agree to terms", "error");
+    if (!form.ageConfirmed)
+      return showNotification("Please confirm you are 18+", "error");
 
     const result = await auth.login(form);
     if (result.success) {
@@ -244,11 +255,23 @@ export default function VideoDatingPlatform() {
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    const result = await updateProfile(auth.userId, form, showNotification);
+    const result = await updateProfile(
+      auth.userId,
+      {
+        nickname: form.nickname,
+        tagline: form.tagline,
+        location: form.location,
+        picture: form.picturePreview,
+        extraPictures: form.extraPictures || [],
+      },
+      showNotification,
+    );
     if (result.success) {
       auth.setUserNickname(form.nickname);
+      auth.setUserLocation(form.location);
       setShowProfileEdit(false);
       setShowModelProfile(false);
+      fetchProfiles();
     }
   };
 
@@ -323,6 +346,11 @@ export default function VideoDatingPlatform() {
     setShowSafetyWarning(true);
   };
 
+  const handleViewModelProfile = (profile) => {
+    setSelectedModelProfile(profile);
+    setShowViewModelProfile(true);
+  };
+
   const confirmCall = async () => {
     setShowSafetyWarning(false);
 
@@ -366,6 +394,9 @@ export default function VideoDatingPlatform() {
         callerId: auth.userId,
         receiverId: receiverUserId,
         channelName,
+        callerName: auth.userName || auth.userNickname || "Client",
+        callerAge: auth.userAge,
+        callerLocation: auth.userLocation,
       });
 
       setActiveCall(profile);
@@ -470,7 +501,7 @@ export default function VideoDatingPlatform() {
       setIncomingCall(null);
       setCallStatus("connecting");
       setActiveCall({
-        name: "Client",
+        name: incomingCall.callerName || "Client",
         userId: incomingCall.callerId,
       });
 
@@ -634,11 +665,26 @@ export default function VideoDatingPlatform() {
       await client.leave();
 
       // Update earnings for model
-      if (auth.userRole === "model") {
-        auth.setTotalEarned((prev) => prev + amount);
+      if (auth.userRole === "model" && amount > 0) {
+        const newTotal = auth.totalEarned + amount;
+        auth.setTotalEarned(newTotal);
+
+        // Also update in backend
+        try {
+          await fetch(`${API_URL}/auth/update-earnings`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: auth.userId,
+              totalEarned: newTotal,
+            }),
+          });
+        } catch (err) {
+          console.log("Could not update backend earnings:", err);
+        }
       }
 
-      // Show detailed modal instead of notification
+      // Show detailed modal
       setCallEndedData({
         duration: callDuration,
         tokensUsed,
@@ -753,6 +799,7 @@ export default function VideoDatingPlatform() {
           setCurrentPage={setCurrentPage}
           onTokenPurchase={handleTokenPurchase}
           onStartCall={handleStartCall}
+          onViewProfile={handleViewModelProfile}
         />
       )}
 
@@ -781,8 +828,8 @@ export default function VideoDatingPlatform() {
       <ProfileEditModal
         show={showProfileEdit && auth.userRole === "client"}
         onClose={() => setShowProfileEdit(false)}
-        nickname={form.nickname}
-        setNickname={(val) => setForm({ ...form, nickname: val })}
+        form={form}
+        setForm={setForm}
         onSave={handleProfileUpdate}
       />
 
@@ -860,12 +907,28 @@ export default function VideoDatingPlatform() {
         show={!!incomingCall}
         onAccept={handleAcceptCall}
         onReject={handleRejectCall}
+        callerInfo={
+          incomingCall
+            ? {
+                name: incomingCall.callerName,
+                age: incomingCall.callerAge,
+                location: incomingCall.callerLocation,
+              }
+            : null
+        }
       />
 
       <CallEndedModal
         show={showCallEndedModal}
         onClose={() => setShowCallEndedModal(false)}
         callData={callEndedData}
+      />
+
+      <ViewModelProfileModal
+        show={showViewModelProfile}
+        onClose={() => setShowViewModelProfile(false)}
+        profile={selectedModelProfile}
+        onCall={handleStartCall}
       />
     </div>
   );
