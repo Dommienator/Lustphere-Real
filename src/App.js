@@ -253,6 +253,7 @@ export default function VideoDatingPlatform() {
   }, [inCall, auth.userRole]);
 
   // Persist login on refresh
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
     if (savedUser) {
