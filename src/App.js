@@ -125,11 +125,12 @@ export default function VideoDatingPlatform() {
   const declinedRef = useRef(false);
 
   // Effects
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProfiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (auth.isLoggedIn && auth.userId) {
       fetchCallHistory(auth.userId);
@@ -137,7 +138,6 @@ export default function VideoDatingPlatform() {
         fetchEarningsHistory(auth.userId);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.isLoggedIn, auth.userId, auth.userRole]);
 
   useEffect(() => {
@@ -156,6 +156,7 @@ export default function VideoDatingPlatform() {
   }, [auth.isLoggedIn, auth.userRole, auth.userId]);
 
   // POLL FOR CALL STATUS (CLIENT SIDE)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (
       auth.isLoggedIn &&
@@ -218,6 +219,7 @@ export default function VideoDatingPlatform() {
     localTrack,
   ]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (inCall) {
       callTimerRef.current = setInterval(() => {
@@ -248,7 +250,6 @@ export default function VideoDatingPlatform() {
     return () => {
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inCall, auth.userRole]);
 
   // Persist login on refresh
@@ -328,6 +329,7 @@ export default function VideoDatingPlatform() {
       if (data.profile) {
         setForm({
           ...form,
+          name: auth.userName || "",
           nickname: data.profile.nickname || auth.userNickname || "",
           location: data.profile.location || auth.userLocation || "",
           picturePreview: data.profile.picture || null,
@@ -348,6 +350,8 @@ export default function VideoDatingPlatform() {
       if (data.profile) {
         setForm({
           ...form,
+          name: auth.userName || "",
+          nickname: data.profile.nickname || auth.userNickname || "",
           picturePreview: data.profile.picture || null,
           extraPictures: data.profile.extraPictures || [],
           location: data.profile.location || "",
@@ -366,6 +370,7 @@ export default function VideoDatingPlatform() {
     const result = await updateProfile(
       auth.userId,
       {
+        name: form.name,
         nickname: form.nickname,
         tagline: form.tagline,
         location: form.location,
@@ -376,6 +381,7 @@ export default function VideoDatingPlatform() {
     );
 
     if (result.success) {
+      auth.setUserName(form.name);
       auth.setUserNickname(form.nickname);
       auth.setUserLocation(form.location);
       setShowProfileEdit(false);
@@ -543,7 +549,7 @@ export default function VideoDatingPlatform() {
       await client.publish([videoTrack, audioTrack]);
 
       if (localVideoRef.current) {
-        videoTrack.play(localVideoRef.current);
+        videoTrack.play(localVideoRef.current, { fit: "contain" });
       }
 
       console.log("👂 Setting up listeners...");
@@ -566,6 +572,7 @@ export default function VideoDatingPlatform() {
           user.audioTrack.play();
         }
       });
+
       client.on("user-left", async (user) => {
         console.log("👋 Model left");
         handleEndCall("other");
@@ -715,6 +722,7 @@ export default function VideoDatingPlatform() {
       setActiveCall(null);
     }
   };
+
   const handleRejectCall = async () => {
     if (!incomingCall) return;
 
@@ -727,6 +735,7 @@ export default function VideoDatingPlatform() {
     setIncomingCall(null);
     showNotification("📵 Call declined", "success");
   };
+
   const handleEndCall = async (endedBy = "self") => {
     try {
       // CALCULATE EVERYTHING BEFORE CLEARING STATE
@@ -736,8 +745,15 @@ export default function VideoDatingPlatform() {
       const tokensUsed = Math.ceil(finalDuration / 60);
       const amount = Math.ceil((finalDuration / 60) * TOKEN_TO_KSH); // KSh per minute
 
+      console.log("📊 Call Summary:", {
+        finalDuration,
+        tokensUsed,
+        amount,
+        role: auth.userRole,
+      });
+
       // Save call to database
-      if (activeCall && callDuration > 0) {
+      if (activeCall && finalDuration > 0) {
         try {
           await fetch(`${API_URL}/calls/save`, {
             method: "POST",
@@ -755,7 +771,7 @@ export default function VideoDatingPlatform() {
                   : typeof activeCall.userId === "object"
                     ? activeCall.userId._id
                     : activeCall.userId,
-              duration: callDuration,
+              duration: finalDuration,
               tokensUsed,
               amountKsh: amount,
               status: "completed",
@@ -811,19 +827,18 @@ export default function VideoDatingPlatform() {
         }
       }
 
-      // Show detailed modal
+      // SET CALL ENDED DATA WITH CALCULATED VALUES
       setCallEndedData({
-        duration: callDuration,
-        tokensUsed,
+        duration: finalDuration,
+        tokensUsed: tokensUsed,
         amountKsh: amount,
         isModel: auth.userRole === "model",
         totalEarnedToday:
           auth.userRole === "model" ? auth.totalEarned + amount : undefined,
         endedBy,
       });
-      setShowCallEndedModal(true);
 
-      // Clear all state
+      // THEN clear all state
       setActiveCall(null);
       setInCall(false);
       setLocalTrack(null);
@@ -834,6 +849,9 @@ export default function VideoDatingPlatform() {
         clearInterval(callTimerRef.current);
         callTimerRef.current = null;
       }
+
+      // SHOW MODAL AFTER SETTING DATA
+      setShowCallEndedModal(true);
 
       fetchCallHistory(auth.userId);
       if (auth.userRole === "model") {
