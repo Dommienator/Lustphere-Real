@@ -159,6 +159,7 @@ export default function VideoDatingPlatform() {
 
   // POLL FOR CALL STATUS (CLIENT SIDE)
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // POLL FOR CALL STATUS (CLIENT SIDE)
   useEffect(() => {
     if (
       auth.isLoggedIn &&
