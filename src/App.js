@@ -224,17 +224,20 @@ export default function VideoDatingPlatform() {
         setCallDuration((prev) => {
           const newDuration = prev + 1;
 
-          // Only deduct tokens for clients
-          if (
-            auth.userRole === "client" &&
-            newDuration > 0 &&
-            newDuration % 30 === 0
-          ) {
-            if (auth.userTokens > 0) {
-              auth.setUserTokens((t) => t - 1);
-            } else {
-              showNotification("Out of tokens! Call ending...", "error");
-              handleEndCall();
+          // Deduct tokens PER SECOND for clients (1 token = 60 seconds)
+          if (auth.userRole === "client" && newDuration > 0) {
+            // Calculate tokens used (1 token per 60 seconds)
+            const tokensNeeded = Math.ceil(newDuration / 60);
+            const currentTokensUsed = Math.ceil(prev / 60);
+
+            // Deduct 1 token every 60 seconds
+            if (tokensNeeded > currentTokensUsed) {
+              if (auth.userTokens > 0) {
+                auth.setUserTokens((t) => t - 1);
+              } else {
+                showNotification("Out of tokens! Call ending...", "error");
+                handleEndCall();
+              }
             }
           }
 
@@ -246,7 +249,7 @@ export default function VideoDatingPlatform() {
       if (callTimerRef.current) clearInterval(callTimerRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inCall, auth.userRole, auth.userTokens]);
+  }, [inCall, auth.userRole]);
 
   // Persist login on refresh
   useEffect(() => {
@@ -554,16 +557,15 @@ export default function VideoDatingPlatform() {
         setCallStatus("connecting");
         await client.subscribe(user, mediaType);
         if (mediaType === "video" && remoteVideoRef.current) {
-          user.videoTrack.play(remoteVideoRef.current);
+          user.videoTrack.play(remoteVideoRef.current, { fit: "contain" });
           setCallStatus("connected");
-          setInCall(true);
-          console.log("✅ Call in progress!");
+          setInCall(true); // START TIMER NOW
+          console.log("✅ Call in progress! Timer started.");
         }
         if (mediaType === "audio") {
           user.audioTrack.play();
         }
       });
-
       client.on("user-left", async (user) => {
         console.log("👋 Model left");
         handleEndCall("other");
@@ -617,7 +619,6 @@ export default function VideoDatingPlatform() {
         console.log("ℹ️ No previous channel to leave");
       }
 
-      // Small delay to ensure camera is released
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Mark call as accepted on backend
@@ -671,17 +672,15 @@ export default function VideoDatingPlatform() {
       console.log("✅ Tracks published");
 
       if (localVideoRef.current) {
-        videoTrack.play(localVideoRef.current);
+        videoTrack.play(localVideoRef.current, { fit: "contain" });
         console.log("✅ Local video playing");
       }
 
       console.log("👂 Setting up event listeners...");
 
-      // Remove old listeners
       client.removeAllListeners("user-published");
       client.removeAllListeners("user-left");
 
-      // Listen for remote user
       client.on("user-published", async (user, mediaType) => {
         console.log("📥 Remote user published:", mediaType);
         try {
@@ -689,10 +688,10 @@ export default function VideoDatingPlatform() {
           console.log("✅ Subscribed to", mediaType);
 
           if (mediaType === "video" && remoteVideoRef.current) {
-            user.videoTrack.play(remoteVideoRef.current);
+            user.videoTrack.play(remoteVideoRef.current, { fit: "contain" });
             setCallStatus("connected");
-            setInCall(true);
-            console.log("✅ Call in progress!");
+            setInCall(true); // START TIMER NOW
+            console.log("✅ Call in progress! Timer started.");
           }
           if (mediaType === "audio") {
             user.audioTrack.play();
@@ -717,23 +716,14 @@ export default function VideoDatingPlatform() {
     }
   };
 
-  const handleRejectCall = async () => {
-    if (!incomingCall) return;
-
-    try {
-      await callAPI.reject({ callId: incomingCall.id });
-    } catch (error) {
-      console.error("Error rejecting call:", error);
-    }
-
-    setIncomingCall(null);
-    showNotification("📵 Call declined", "success");
-  };
-
   const handleEndCall = async (endedBy = "self") => {
     try {
-      const tokensUsed = Math.ceil(callDuration / 30);
-      const amount = tokensUsed * TOKEN_TO_KSH;
+      // CALCULATE EVERYTHING BEFORE CLEARING STATE
+      const finalDuration = callDuration;
+
+      // Calculate based on actual seconds (1 token = 60 seconds = 23 KSh per minute)
+      const tokensUsed = Math.ceil(finalDuration / 60);
+      const amount = Math.ceil((finalDuration / 60) * TOKEN_TO_KSH); // KSh per minute
 
       // Save call to database
       if (activeCall && callDuration > 0) {
