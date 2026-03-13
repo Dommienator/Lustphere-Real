@@ -128,7 +128,6 @@ export default function VideoDatingPlatform() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchProfiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,7 +138,6 @@ export default function VideoDatingPlatform() {
         fetchEarningsHistory(auth.userId);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.isLoggedIn, auth.userId, auth.userRole]);
 
   useEffect(() => {
@@ -159,7 +157,6 @@ export default function VideoDatingPlatform() {
 
   // POLL FOR CALL STATUS (CLIENT SIDE)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // POLL FOR CALL STATUS (CLIENT SIDE)
   useEffect(() => {
     if (
       auth.isLoggedIn &&
@@ -182,6 +179,7 @@ export default function VideoDatingPlatform() {
             clearInterval(statusPollInterval);
             declinedRef.current = true;
 
+            // Clean up everything
             if (localTrack) {
               if (localTrack.videoTrack) {
                 localTrack.videoTrack.stop();
@@ -212,7 +210,6 @@ export default function VideoDatingPlatform() {
 
       return () => clearInterval(statusPollInterval);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     auth.isLoggedIn,
     auth.userRole,
@@ -221,6 +218,7 @@ export default function VideoDatingPlatform() {
     auth.userId,
     localTrack,
   ]);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (inCall) {
