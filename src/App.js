@@ -715,7 +715,18 @@ export default function VideoDatingPlatform() {
       setActiveCall(null);
     }
   };
+  const handleRejectCall = async () => {
+    if (!incomingCall) return;
 
+    try {
+      await callAPI.reject({ callId: incomingCall.id });
+    } catch (error) {
+      console.error("Error rejecting call:", error);
+    }
+
+    setIncomingCall(null);
+    showNotification("📵 Call declined", "success");
+  };
   const handleEndCall = async (endedBy = "self") => {
     try {
       // CALCULATE EVERYTHING BEFORE CLEARING STATE
