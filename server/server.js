@@ -1,4 +1,4 @@
-require("dotenv").config({ path: "../.env" });
+require("dotenv").config();
 console.log("AGORA_APP_ID:", process.env.AGORA_APP_ID);
 console.log("AGORA_APP_CERTIFICATE:", process.env.AGORA_APP_CERTIFICATE);
 
@@ -25,6 +25,7 @@ const profileRoutes = require("./routes/profiles");
 const agoraRoutes = require("./routes/agora");
 const callHistoryRoutes = require("./routes/calls");
 const earningsRoutes = require("./routes/earnings");
+const paymentsRoutes = require("./routes/payments");
 
 // Use Routes
 app.use("/api/auth", authRoutes);
@@ -32,7 +33,7 @@ app.use("/api/profiles", profileRoutes);
 app.use("/api/agora", agoraRoutes);
 app.use("/api/calls", callHistoryRoutes);
 app.use("/api/earnings", earningsRoutes);
-app.use("/api/payments", require("./routes/payments"));
+app.use("/api/payments", paymentsRoutes);
 
 // In-memory call store
 global.activeCalls = [];
@@ -130,4 +131,3 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
-app.use("/api/payments", require("./routes/payments"));
