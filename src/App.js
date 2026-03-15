@@ -619,20 +619,30 @@ export default function VideoDatingPlatform() {
         console.log("✅ Closed previous tracks");
       }
 
-      // FORCE LEAVE any existing connection
+      // FORCE LEAVE any existing connection - ADD ERROR HANDLING
       try {
-        await client.leave();
-        console.log("✅ Left any previous channel");
-      } catch (err) {
-        console.log("ℹ️ No previous channel to leave");
-      }
+        const connectionState = client.connectionState;
+        console.log("Current connection state:", connectionState);
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
+        if (
+          connectionState === "CONNECTED" ||
+          connectionState === "CONNECTING"
+        ) {
+          console.log("Leaving existing channel...");
+          await client.leave();
+          console.log("✅ Left previous channel");
+
+          // CRITICAL: Wait for disconnect to complete
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } catch (err) {
+        console.log("ℹ️ No channel to leave or already left:", err.message);
+      }
 
       // Mark call as accepted on backend
       await callAPI.accept({ callId: incomingCall.id });
 
-      // Clear incoming call IMMEDIATELY
+      // Clear incoming call
       setIncomingCall(null);
       setCallStatus("connecting");
       setActiveCall({
@@ -659,14 +669,24 @@ export default function VideoDatingPlatform() {
       console.log("✅ Token received");
       console.log("🔄 Joining Agora channel...");
 
-      await client.join(
-        tokenData.appId,
-        incomingCall.channelName,
-        tokenData.token,
-        uid,
-      );
+      // JOIN with error handling
+      try {
+        await client.join(
+          tokenData.appId,
+          incomingCall.channelName,
+          tokenData.token,
+          uid,
+        );
+        console.log("✅ Joined channel successfully");
+      } catch (joinError) {
+        console.error("❌ Failed to join channel:", joinError);
+        showNotification("Failed to join call: " + joinError.message, "error");
+        setCallStatus(null);
+        setActiveCall(null);
+        setIncomingCall(null);
+        return;
+      }
 
-      console.log("✅ Joined channel");
       console.log("🎥 Creating NEW camera and mic tracks...");
 
       const videoTrack = await AgoraRTC.createCameraVideoTrack();
@@ -698,7 +718,7 @@ export default function VideoDatingPlatform() {
           if (mediaType === "video" && remoteVideoRef.current) {
             user.videoTrack.play(remoteVideoRef.current, { fit: "contain" });
             setCallStatus("connected");
-            setInCall(true); // START TIMER NOW
+            setInCall(true);
             console.log("✅ Call in progress! Timer started.");
           }
           if (mediaType === "audio") {
