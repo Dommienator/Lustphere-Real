@@ -759,17 +759,16 @@ export default function VideoDatingPlatform() {
 
   const handleEndCall = async (endedBy = "self") => {
     try {
-      // CALCULATE EVERYTHING BEFORE CLEARING STATE
+      // CAPTURE VALUES IMMEDIATELY - BEFORE CLEARING ANYTHING
       const finalDuration = callDuration;
+      const finalTokensUsed = Math.ceil(finalDuration / 60);
+      const finalAmount = Math.ceil((finalDuration / 60) * TOKEN_TO_KSH);
+      const isModel = auth.userRole === "model";
 
-      // Calculate based on actual seconds (1 token = 60 seconds = 23 KSh per minute)
-      const tokensUsed = Math.ceil(finalDuration / 60);
-      const amount = Math.ceil((finalDuration / 60) * TOKEN_TO_KSH); // KSh per minute
-
-      console.log("📊 Call Summary:", {
+      console.log("📊 Call Summary CAPTURED:", {
         finalDuration,
-        tokensUsed,
-        amount,
+        finalTokensUsed,
+        finalAmount,
         role: auth.userRole,
       });
 
@@ -793,8 +792,8 @@ export default function VideoDatingPlatform() {
                     ? activeCall.userId._id
                     : activeCall.userId,
               duration: finalDuration,
-              tokensUsed,
-              amountKsh: amount,
+              tokensUsed: finalTokensUsed,
+              amountKsh: finalAmount,
               status: "completed",
             }),
           });
@@ -829,11 +828,10 @@ export default function VideoDatingPlatform() {
       await client.leave();
 
       // Update earnings for model
-      if (auth.userRole === "model" && amount > 0) {
-        const newTotal = auth.totalEarned + amount;
+      if (isModel && finalAmount > 0) {
+        const newTotal = auth.totalEarned + finalAmount;
         auth.setTotalEarned(newTotal);
 
-        // Also update in backend
         try {
           await fetch(`${API_URL}/auth/update-earnings`, {
             method: "POST",
@@ -848,34 +846,41 @@ export default function VideoDatingPlatform() {
         }
       }
 
-      // SET CALL ENDED DATA WITH CALCULATED VALUES
+      // SET CALL ENDED DATA **BEFORE** CLEARING STATE
       setCallEndedData({
         duration: finalDuration,
-        tokensUsed: tokensUsed,
-        amountKsh: amount,
-        isModel: auth.userRole === "model",
-        totalEarnedToday:
-          auth.userRole === "model" ? auth.totalEarned + amount : undefined,
+        tokensUsed: finalTokensUsed,
+        amountKsh: finalAmount,
+        isModel: isModel,
+        totalEarnedToday: isModel ? auth.totalEarned + finalAmount : undefined,
         endedBy,
+      });
+
+      console.log("📊 Call ended data SET:", {
+        duration: finalDuration,
+        tokensUsed: finalTokensUsed,
+        amountKsh: finalAmount,
       });
 
       // THEN clear all state
       setActiveCall(null);
       setInCall(false);
       setLocalTrack(null);
-      setCallDuration(0);
+      setCallDuration(0); // Clear AFTER setting modal data
       setIncomingCall(null);
       setCallStatus(null);
+
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
         callTimerRef.current = null;
       }
 
-      // SHOW MODAL AFTER SETTING DATA
+      // SHOW MODAL (data already set above)
       setShowCallEndedModal(true);
 
+      // Refresh history
       fetchCallHistory(auth.userId);
-      if (auth.userRole === "model") {
+      if (isModel) {
         fetchEarningsHistory(auth.userId);
       }
     } catch (error) {
@@ -886,6 +891,7 @@ export default function VideoDatingPlatform() {
       setLocalTrack(null);
       setIncomingCall(null);
       setCallStatus(null);
+      setCallDuration(0);
     }
   };
 
