@@ -37,6 +37,9 @@ import { ViewModelProfileModal } from "./components/modals/ViewModelProfileModal
 
 const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
 
+// Global backup for call duration (in case state gets cleared)
+let lastKnownDuration = 0;
+
 export default function VideoDatingPlatform() {
   // Notifications
   const { notification, showNotification } = useNotifications();
@@ -219,20 +222,20 @@ export default function VideoDatingPlatform() {
     localTrack,
   ]);
 
+  // Timer with backup tracking
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (inCall) {
       callTimerRef.current = setInterval(() => {
         setCallDuration((prev) => {
           const newDuration = prev + 1;
+          lastKnownDuration = newDuration; // BACKUP duration globally
 
           // Deduct tokens PER SECOND for clients (1 token = 60 seconds)
           if (auth.userRole === "client" && newDuration > 0) {
-            // Calculate tokens used (1 token per 60 seconds)
             const tokensNeeded = Math.ceil(newDuration / 60);
             const currentTokensUsed = Math.ceil(prev / 60);
 
-            // Deduct 1 token every 60 seconds
             if (tokensNeeded > currentTokensUsed) {
               if (auth.userTokens > 0) {
                 auth.setUserTokens((t) => t - 1);
@@ -269,7 +272,6 @@ export default function VideoDatingPlatform() {
       auth.setTotalEarned(userData.totalEarned);
       auth.setIsLoggedIn(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handlers
@@ -322,7 +324,6 @@ export default function VideoDatingPlatform() {
   };
 
   const handleOpenProfileEdit = async () => {
-    // Fetch current profile data for client
     try {
       const response = await fetch(`${API_URL}/profiles/user/${auth.userId}`);
       const data = await response.json();
@@ -343,7 +344,6 @@ export default function VideoDatingPlatform() {
   };
 
   const handleOpenModelProfile = async () => {
-    // Fetch current profile data for model
     try {
       const response = await fetch(`${API_URL}/profiles/user/${auth.userId}`);
       const data = await response.json();
@@ -387,14 +387,8 @@ export default function VideoDatingPlatform() {
       auth.setUserLocation(form.location);
       setShowProfileEdit(false);
       setShowModelProfile(false);
-
-      // Show success notification
       showNotification("✅ Profile updated successfully!", "success");
-
-      // Refresh profiles
       fetchProfiles();
-
-      // Return to homepage (scroll to top)
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       showNotification("❌ Failed to update profile", "error");
@@ -504,7 +498,6 @@ export default function VideoDatingPlatform() {
         console.log("ℹ️ No previous channel to leave");
       }
 
-      // Small delay
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       const profile = pendingProfile;
@@ -566,7 +559,7 @@ export default function VideoDatingPlatform() {
         if (mediaType === "video" && remoteVideoRef.current) {
           user.videoTrack.play(remoteVideoRef.current, { fit: "contain" });
           setCallStatus("connected");
-          setInCall(true); // START TIMER NOW
+          setInCall(true);
           console.log("✅ Call in progress! Timer started.");
         }
         if (mediaType === "audio") {
@@ -619,7 +612,7 @@ export default function VideoDatingPlatform() {
         console.log("✅ Closed previous tracks");
       }
 
-      // FORCE LEAVE any existing connection - ADD ERROR HANDLING
+      // FORCE LEAVE any existing connection
       try {
         const connectionState = client.connectionState;
         console.log("Current connection state:", connectionState);
@@ -669,7 +662,6 @@ export default function VideoDatingPlatform() {
       console.log("✅ Token received");
       console.log("🔄 Joining Agora channel...");
 
-      // JOIN with error handling
       try {
         await client.join(
           tokenData.appId,
@@ -759,14 +751,16 @@ export default function VideoDatingPlatform() {
 
   const handleEndCall = async (endedBy = "self") => {
     try {
-      // CAPTURE VALUES IMMEDIATELY - BEFORE CLEARING ANYTHING
-      const finalDuration = callDuration;
+      // CAPTURE VALUES IMMEDIATELY using backup
+      const finalDuration = callDuration || lastKnownDuration;
       const finalTokensUsed = Math.ceil(finalDuration / 60);
       const finalAmount = Math.ceil((finalDuration / 60) * TOKEN_TO_KSH);
       const isModel = auth.userRole === "model";
 
-      console.log("📊 Call Summary CAPTURED:", {
-        finalDuration,
+      console.log("🔴 FINAL - Raw callDuration:", callDuration);
+      console.log("🔴 FINAL - Backup lastKnownDuration:", lastKnownDuration);
+      console.log("🔴 FINAL - Using finalDuration:", finalDuration);
+      console.log("🔴 FINAL - Calculated:", {
         finalTokensUsed,
         finalAmount,
         role: auth.userRole,
@@ -813,7 +807,7 @@ export default function VideoDatingPlatform() {
         });
       }
 
-      // Close tracks
+      // STOP AND CLOSE TRACKS PROPERLY
       if (localTrack) {
         if (localTrack.videoTrack) {
           localTrack.videoTrack.stop();
@@ -823,9 +817,16 @@ export default function VideoDatingPlatform() {
           localTrack.audioTrack.stop();
           localTrack.audioTrack.close();
         }
+        console.log("🎥 Tracks stopped and closed");
       }
 
-      await client.leave();
+      // Leave Agora channel
+      try {
+        await client.leave();
+        console.log("✅ Left Agora channel");
+      } catch (err) {
+        console.log("Already left channel");
+      }
 
       // Update earnings for model
       if (isModel && finalAmount > 0) {
@@ -847,36 +848,35 @@ export default function VideoDatingPlatform() {
       }
 
       // SET CALL ENDED DATA **BEFORE** CLEARING STATE
-      setCallEndedData({
+      const modalData = {
         duration: finalDuration,
         tokensUsed: finalTokensUsed,
         amountKsh: finalAmount,
         isModel: isModel,
         totalEarnedToday: isModel ? auth.totalEarned + finalAmount : undefined,
         endedBy,
-      });
+      };
 
-      console.log("📊 Call ended data SET:", {
-        duration: finalDuration,
-        tokensUsed: finalTokensUsed,
-        amountKsh: finalAmount,
-      });
+      console.log("🔴 FINAL - Setting callEndedData:", modalData);
+      setCallEndedData(modalData);
 
       // THEN clear all state
       setActiveCall(null);
       setInCall(false);
       setLocalTrack(null);
-      setCallDuration(0); // Clear AFTER setting modal data
+      setCallDuration(0);
       setIncomingCall(null);
       setCallStatus(null);
+      lastKnownDuration = 0; // Reset backup
 
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
         callTimerRef.current = null;
       }
 
-      // SHOW MODAL (data already set above)
+      // SHOW MODAL
       setShowCallEndedModal(true);
+      console.log("🔴 FINAL - Modal should be visible with data");
 
       // Refresh history
       fetchCallHistory(auth.userId);
@@ -885,13 +885,26 @@ export default function VideoDatingPlatform() {
       }
     } catch (error) {
       console.error("Error ending call:", error);
-      // Force cleanup
+
+      // Force cleanup on error
+      if (localTrack) {
+        if (localTrack.videoTrack) {
+          localTrack.videoTrack.stop();
+          localTrack.videoTrack.close();
+        }
+        if (localTrack.audioTrack) {
+          localTrack.audioTrack.stop();
+          localTrack.audioTrack.close();
+        }
+      }
+
       setActiveCall(null);
       setInCall(false);
       setLocalTrack(null);
       setIncomingCall(null);
       setCallStatus(null);
       setCallDuration(0);
+      lastKnownDuration = 0;
     }
   };
 
