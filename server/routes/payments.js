@@ -16,41 +16,23 @@ router.post("/mpesa/purchase", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Remove spaces and + sign
-let formattedPhone = phoneNumber.replace(/[\s+]/g, "");
+    let formattedPhone = phoneNumber.replace(/[\s+]/g, "");
 
-// Convert 07XXXXXXXX to 2547XXXXXXXX
-if (formattedPhone.startsWith("07")) {
-  formattedPhone = "254" + formattedPhone.substring(1);
-}
+    if (formattedPhone.startsWith("07")) {
+      formattedPhone = "254" + formattedPhone.substring(1);
+    }
 
-// Convert 7XXXXXXXX to 2547XXXXXXXX
-if (formattedPhone.startsWith("7") && formattedPhone.length === 9) {
-  formattedPhone = "254" + formattedPhone;
-}
+    if (formattedPhone.startsWith("7") && formattedPhone.length === 9) {
+      formattedPhone = "254" + formattedPhone;
+    }
 
-// Validate final format: 254XXXXXXXXX (12 digits)
-if (!formattedPhone.match(/^254\d{9}$/)) {
-  return res
-    .status(400)
-    .json({ message: "Invalid phone number. Use 07XXXXXXXX or 254XXXXXXXX" });
-}
-```
-
-This will accept:
-- ✅ `0712345678`
-- ✅ `+254712345678`
-- ✅ `254712345678`
-- ✅ `712345678`
-
----
-
-**Now try the payment again and paste the ERROR from Render logs!**
-
-The logs should show something like:
-```
-POST /api/payments/mpesa/purchase 400
-Missing required fields
+    if (!formattedPhone.match(/^254\d{9}$/)) {
+      return res
+        .status(400)
+        .json({
+          message: "Invalid phone number. Use 07XXXXXXXX or 254XXXXXXXX",
+        });
+    }
 
     const transaction = new Transaction({
       userId,
@@ -237,12 +219,10 @@ router.post("/paypal/purchase", async (req, res) => {
       transaction.status = "failed";
       transaction.failureReason = paypalResponse.error;
       await transaction.save();
-      return res
-        .status(500)
-        .json({
-          message: "PayPal request failed",
-          error: paypalResponse.error,
-        });
+      return res.status(500).json({
+        message: "PayPal request failed",
+        error: paypalResponse.error,
+      });
     }
 
     transaction.paypalOrderID = paypalResponse.orderID;
@@ -278,12 +258,10 @@ router.post("/paypal/capture", async (req, res) => {
       transaction.status = "failed";
       transaction.failureReason = captureResponse.error;
       await transaction.save();
-      return res
-        .status(500)
-        .json({
-          message: "Payment capture failed",
-          error: captureResponse.error,
-        });
+      return res.status(500).json({
+        message: "Payment capture failed",
+        error: captureResponse.error,
+      });
     }
 
     transaction.status = "completed";
