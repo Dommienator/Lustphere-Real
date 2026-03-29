@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { callAPI, tokenAPI, earningsAPI } from '../services/api';
+import { useState } from "react";
+import { callAPI, tokenAPI, earningsAPI } from "../services/api";
 
 export const useCallManagement = () => {
   const [callHistory, setCallHistory] = useState([]);
@@ -14,7 +14,7 @@ export const useCallManagement = () => {
         setCallHistory(data.calls || []);
       }
     } catch (error) {
-      console.error('Error fetching call history:', error);
+      console.error("Error fetching call history:", error);
     }
   };
 
@@ -27,65 +27,83 @@ export const useCallManagement = () => {
         setEarningsHistory(data.earnings || []);
       }
     } catch (error) {
-      console.error('Error fetching earnings history:', error);
+      console.error("Error fetching earnings history:", error);
     }
   };
 
-  const purchaseTokens = async (userId, packageData, mpesaNumber, showNotification) => {
-    if (!mpesaNumber || mpesaNumber.length < 10) {
-      showNotification('Enter valid M-Pesa number', 'error');
-      return { success: false };
-    }
-    
+  const purchaseTokens = async (
+    userId,
+    tier,
+    phoneNumber,
+    showNotification,
+  ) => {
     try {
-      const response = await tokenAPI.purchase({
-        userId,
-        tokens: packageData.tokens,
-        amount: packageData.price,
-        mpesaNumber,
+      const response = await fetch(`${API_URL}/payments/mpesa/purchase`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId, // ← ADD THIS LINE
+          phoneNumber,
+          amount: tier.price,
+          tokens: tier.tokens,
+        }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
-        showNotification(`✅ Purchase initiated! Check ${mpesaNumber}`, 'success');
+        showNotification(
+          `✅ Purchase initiated! Check ${mpesaNumber}`,
+          "success",
+        );
         return { success: true };
       } else {
-        showNotification(data.message || 'Purchase failed', 'error');
+        showNotification(data.message || "Purchase failed", "error");
         return { success: false };
       }
     } catch (error) {
-      showNotification('Purchase failed', 'error');
+      showNotification("Purchase failed", "error");
       return { success: false };
     }
   };
 
-  const withdrawEarnings = async (userId, amount, totalEarned, showNotification) => {
+  const withdrawEarnings = async (
+    userId,
+    amount,
+    totalEarned,
+    showNotification,
+  ) => {
     const withdrawAmount = parseFloat(amount);
-    
+
     if (!withdrawAmount || withdrawAmount <= 0) {
-      showNotification('Enter valid amount', 'error');
+      showNotification("Enter valid amount", "error");
       return { success: false };
     }
-    
+
     if (withdrawAmount > totalEarned) {
-      showNotification('Insufficient balance', 'error');
+      showNotification("Insufficient balance", "error");
       return { success: false };
     }
-    
+
     try {
-      const response = await earningsAPI.withdraw({ userId, amount: withdrawAmount });
+      const response = await earningsAPI.withdraw({
+        userId,
+        amount: withdrawAmount,
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
-        showNotification(`💰 Withdrawal of KSh ${withdrawAmount} initiated!`, 'success');
+        showNotification(
+          `💰 Withdrawal of KSh ${withdrawAmount} initiated!`,
+          "success",
+        );
         return { success: true, amount: withdrawAmount };
       } else {
-        showNotification(data.message || 'Withdrawal failed', 'error');
+        showNotification(data.message || "Withdrawal failed", "error");
         return { success: false };
       }
     } catch (error) {
-      showNotification('Withdrawal failed', 'error');
+      showNotification("Withdrawal failed", "error");
       return { success: false };
     }
   };
@@ -96,6 +114,6 @@ export const useCallManagement = () => {
     fetchCallHistory,
     fetchEarningsHistory,
     purchaseTokens,
-    withdrawEarnings
+    withdrawEarnings,
   };
 };
