@@ -16,12 +16,41 @@ router.post("/mpesa/purchase", async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    const formattedPhone = phoneNumber.replace(/[\s+]/g, "");
-    if (!formattedPhone.match(/^254\d{9}$/)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid phone number. Use 254XXXXXXXXX" });
-    }
+    // Remove spaces and + sign
+let formattedPhone = phoneNumber.replace(/[\s+]/g, "");
+
+// Convert 07XXXXXXXX to 2547XXXXXXXX
+if (formattedPhone.startsWith("07")) {
+  formattedPhone = "254" + formattedPhone.substring(1);
+}
+
+// Convert 7XXXXXXXX to 2547XXXXXXXX
+if (formattedPhone.startsWith("7") && formattedPhone.length === 9) {
+  formattedPhone = "254" + formattedPhone;
+}
+
+// Validate final format: 254XXXXXXXXX (12 digits)
+if (!formattedPhone.match(/^254\d{9}$/)) {
+  return res
+    .status(400)
+    .json({ message: "Invalid phone number. Use 07XXXXXXXX or 254XXXXXXXX" });
+}
+```
+
+This will accept:
+- ✅ `0712345678`
+- ✅ `+254712345678`
+- ✅ `254712345678`
+- ✅ `712345678`
+
+---
+
+**Now try the payment again and paste the ERROR from Render logs!**
+
+The logs should show something like:
+```
+POST /api/payments/mpesa/purchase 400
+Missing required fields
 
     const transaction = new Transaction({
       userId,
