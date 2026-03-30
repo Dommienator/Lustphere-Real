@@ -1052,14 +1052,8 @@ export default function VideoDatingPlatform() {
 
       <TokenPurchaseModal
         show={showTokenPurchase}
-        onClose={() => {
-          setShowTokenPurchase(false);
-          setMpesaNumber("");
-        }}
-        selectedPackage={selectedTokenPackage}
-        mpesaNumber={mpesaNumber}
-        setMpesaNumber={setMpesaNumber}
-        onConfirm={confirmTokenPurchase}
+        onClose={() => setShowTokenPurchase(false)}
+        userId={auth.userId}
       />
 
       <WithdrawModal
