@@ -39,20 +39,27 @@ export const TokenPurchaseModal = ({ show, onClose, userId }) => {
 
     try {
       if (paymentMethod === "mpesa") {
+        console.log("🔴 PAYMENT DEBUG - userId:", userId);
+        console.log("🔴 PAYMENT DEBUG - phoneNumber:", phoneNumber);
+        console.log("🔴 PAYMENT DEBUG - selectedPackage:", selectedPackage);
+
+        const payloadData = {
+          userId,
+          phoneNumber,
+          amount: selectedPackage.price,
+          tokens: selectedPackage.tokens,
+        };
+
+        console.log("🔴 PAYMENT DEBUG - Sending payload:", payloadData);
+
         const response = await fetch(
           `${process.env.REACT_APP_API_URL}/payments/mpesa/purchase`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId,
-              phoneNumber,
-              amount: selectedPackage.price,
-              tokens: selectedPackage.tokens,
-            }),
+            body: JSON.stringify(payloadData),
           },
         );
-
         const data = await response.json();
 
         if (data.success) {
