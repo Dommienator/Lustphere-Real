@@ -1,5 +1,4 @@
 import React from "react";
-import { Phone, MapPin, User } from "lucide-react";
 import { PRICING_TIERS, PROFILES_PER_PAGE } from "../utils/constants";
 
 export const ProfileGrid = ({
@@ -20,32 +19,27 @@ export const ProfileGrid = ({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Token Packages */}
-      <div className="bg-white rounded-2xl p-6 shadow-xl mb-8">
-        <h2 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-          💎 Token Packages - 1 Token = KSh 23
+    <div className="max-w-7xl mx-auto px-2 py-4">
+      {/* Token Packages - Compact */}
+      <div className="bg-white rounded-lg p-3 shadow-sm mb-4">
+        <h2 className="text-lg font-bold text-center mb-3 text-gray-800">
+          Token Packages • 1 Token = 23 KSh
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-5 gap-2">
           {PRICING_TIERS.map((tier, idx) => (
             <button
               key={idx}
               onClick={() => onTokenPurchase(tier)}
-              className="bg-gradient-to-br from-pink-400 to-purple-500 text-white rounded-xl p-4 md:p-6 text-center hover:scale-105 transition cursor-pointer"
+              className="bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-lg p-3 text-center hover:from-gray-700 hover:to-gray-800 transition"
             >
-              <div className="text-3xl md:text-4xl font-bold mb-2">
-                {tier.tokens}
-              </div>
-              <div className="text-sm mb-2 opacity-90">Tokens</div>
-              <div className="text-xl md:text-2xl font-bold mb-2">
-                KSh {tier.price.toLocaleString()}
-              </div>
-              <div className="text-xs opacity-80 mb-2">
-                KSh {tier.perToken}/token
+              <div className="text-2xl font-bold">{tier.tokens}</div>
+              <div className="text-xs opacity-75 mb-1">tokens</div>
+              <div className="text-sm font-bold">
+                {tier.price.toLocaleString()}
               </div>
               {tier.savings > 0 && (
-                <div className="bg-white bg-opacity-20 rounded-full px-3 py-1 text-xs font-bold">
-                  Save {tier.savings}%
+                <div className="bg-white bg-opacity-20 rounded px-2 py-0.5 text-xs font-bold mt-1">
+                  -{tier.savings}%
                 </div>
               )}
             </button>
@@ -53,119 +47,117 @@ export const ProfileGrid = ({
         </div>
       </div>
 
-      {/* Models List */}
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        {isLoggedIn ? "Available Models" : "Meet Our Models"}
-      </h2>
-
+      {/* Models Grid - No Gaps, Large Pictures */}
       {loading ? (
-        <div className="text-center py-12">
-          <p>Loading...</p>
+        <div className="text-center py-8">
+          <p>Loading models...</p>
         </div>
       ) : profiles.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg">
+        <div className="text-center py-8 bg-white rounded-lg">
           <p>No models available</p>
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+          <div className="grid grid-cols-4 gap-0 border border-gray-200">
             {displayedProfiles.map((profile) => (
               <div
                 key={profile._id}
-                className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition transform hover:scale-105"
+                className="relative bg-white border-r border-b border-gray-200 hover:z-10 hover:shadow-2xl transition group"
               >
-                <div className="bg-gradient-to-br from-pink-300 to-purple-400 p-4 md:p-6 text-center relative">
+                {/* Large Profile Picture */}
+                <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
                   {profile.picture && profile.picture.startsWith("data:") ? (
                     <img
                       src={profile.picture}
                       alt={profile.name}
-                      className="w-20 h-20 md:w-24 md:h-24 rounded-full mx-auto border-4 border-white object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="text-5xl md:text-7xl">
-                      {profile.picture || "👩"}
+                    <div className="w-full h-full flex items-center justify-center text-8xl bg-gradient-to-br from-gray-100 to-gray-200">
+                      👩
                     </div>
                   )}
+
+                  {/* Online Badge - Top Right */}
                   <div
-                    className={`absolute top-2 right-2 flex items-center gap-1 ${
-                      profile.isOnline ? "bg-pink-500" : "bg-gray-400"
-                    } text-white text-xs px-2 py-1 rounded-full`}
+                    className={`absolute top-2 right-2 ${
+                      profile.isOnline ? "bg-green-500" : "bg-gray-500"
+                    } text-white text-xs font-bold px-2 py-1 rounded`}
                   >
-                    <div
-                      className={`w-2 h-2 bg-white rounded-full ${
-                        profile.isOnline ? "animate-pulse" : ""
+                    {profile.isOnline ? "ONLINE" : "OFFLINE"}
+                  </div>
+
+                  {/* Info Overlay - Shows on Hover */}
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition flex flex-col justify-end p-3 opacity-0 group-hover:opacity-100">
+                    <h3 className="text-white text-xl font-bold mb-1">
+                      {profile.nickname || profile.name}
+                    </h3>
+                    {profile.age && (
+                      <p className="text-white text-sm opacity-90">
+                        {profile.age} years old
+                      </p>
+                    )}
+                    {profile.location && (
+                      <p className="text-white text-sm opacity-90 mb-2">
+                        {profile.location}
+                      </p>
+                    )}
+                    {profile.tagline && (
+                      <p className="text-white text-xs italic opacity-80 mb-3 line-clamp-2">
+                        "{profile.tagline}"
+                      </p>
+                    )}
+
+                    {/* Call Button */}
+                    <button
+                      onClick={() => onStartCall(profile)}
+                      disabled={!profile.isOnline && isLoggedIn}
+                      className={`w-full py-2 rounded font-bold transition ${
+                        !profile.isOnline && isLoggedIn
+                          ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                          : "bg-white text-gray-900 hover:bg-gray-100"
                       }`}
-                    />
-                    {profile.isOnline ? "Online" : "Offline"}
+                    >
+                      {!isLoggedIn
+                        ? "LOGIN TO CALL"
+                        : profile.isOnline
+                          ? "VIDEO CALL"
+                          : "OFFLINE"}
+                    </button>
                   </div>
                 </div>
 
-                <div className="p-4">
-                  {/* Name - Clickable to view profile */}
+                {/* Compact Info Below Picture */}
+                <div className="p-2 bg-white">
                   <h3
                     onClick={() => onViewProfile && onViewProfile(profile)}
-                    className="text-lg md:text-xl font-bold text-gray-800 mb-2 text-center cursor-pointer hover:text-purple-600 transition"
+                    className="text-sm font-bold text-gray-800 cursor-pointer hover:text-gray-600 transition truncate"
                   >
                     {profile.nickname || profile.name}
                   </h3>
-
-                  {/* Age - WITH ICON */}
-                  {profile.age && (
-                    <div className="flex items-center justify-center gap-1 text-sm text-gray-600 mb-1">
-                      <User className="w-4 h-4" />
-                      <span>{profile.age} years old</span>
-                    </div>
-                  )}
-
-                  {/* Location - WITH ICON */}
-                  {profile.location && (
-                    <div className="flex items-center justify-center gap-1 text-sm text-gray-600 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      <span>{profile.location}</span>
-                    </div>
-                  )}
-
-                  {/* Tagline */}
-                  {profile.tagline && (
-                    <p className="text-xs md:text-sm text-purple-600 italic mb-3 text-center line-clamp-2">
-                      "{profile.tagline}"
-                    </p>
-                  )}
-
-                  {/* Call Button */}
-                  <button
-                    onClick={() => onStartCall(profile)}
-                    disabled={!profile.isOnline && isLoggedIn}
-                    className={`w-full py-2 rounded-lg font-semibold transition flex items-center justify-center gap-2 ${
-                      !profile.isOnline && isLoggedIn
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-pink-400 to-purple-500 hover:from-pink-500 hover:to-purple-600 text-white hover:shadow-lg"
-                    }`}
-                  >
-                    <Phone className="w-4 h-4" />
-                    {!isLoggedIn
-                      ? "Login to Call"
-                      : profile.isOnline
-                        ? "Video Call"
-                        : "Offline"}
-                  </button>
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    {profile.age && <span>{profile.age} yrs</span>}
+                    {profile.location && (
+                      <span className="truncate ml-2">{profile.location}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - Minimal */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 flex-wrap">
+            <div className="flex justify-center gap-1 mt-4">
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                 (page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-4 py-2 rounded-lg font-semibold ${
+                    className={`px-3 py-1 rounded text-sm font-bold ${
                       page === currentPage
-                        ? "bg-gradient-to-r from-pink-500 to-purple-600 text-white"
-                        : "bg-white text-gray-700"
+                        ? "bg-gray-900 text-white"
+                        : "bg-white text-gray-700 hover:bg-gray-100"
                     }`}
                   >
                     {page}
