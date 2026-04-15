@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { PRICING_TIERS, PROFILES_PER_PAGE } from "../utils/constants";
 
 export const ProfileGrid = ({
@@ -11,12 +11,67 @@ export const ProfileGrid = ({
   onStartCall,
   onViewProfile,
 }) => {
-  const totalPages = Math.ceil(profiles.length / PROFILES_PER_PAGE);
+  const [sortBy, setSortBy] = useState("online"); // online, age, location, random
+  const [filterLocation, setFilterLocation] = useState("all");
+
+  // Get unique locations
+  const locations = useMemo(() => {
+    const locs = [...new Set(profiles.map((p) => p.location).filter(Boolean))];
+    return ["all", ...locs.sort()];
+  }, [profiles]);
+
+  // Sort and filter profiles
+  const sortedProfiles = useMemo(() => {
+    let filtered = [...profiles];
+
+    // Filter by location
+    if (filterLocation !== "all") {
+      filtered = filtered.filter((p) => p.location === filterLocation);
+    }
+
+    // Sort
+    switch (sortBy) {
+      case "online":
+        filtered.sort((a, b) => {
+          if (a.isOnline === b.isOnline) return 0;
+          return a.isOnline ? -1 : 1;
+        });
+        break;
+      case "age":
+        filtered.sort((a, b) => {
+          const ageA = a.age || 999;
+          const ageB = b.age || 999;
+          return ageA - ageB;
+        });
+        break;
+      case "location":
+        filtered.sort((a, b) => {
+          const locA = a.location || "";
+          const locB = b.location || "";
+          return locA.localeCompare(locB);
+        });
+        break;
+      case "random":
+        filtered.sort(() => Math.random() - 0.5);
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [profiles, sortBy, filterLocation]);
+
+  const totalPages = Math.ceil(sortedProfiles.length / PROFILES_PER_PAGE);
   const startIdx = (currentPage - 1) * PROFILES_PER_PAGE;
-  const displayedProfiles = profiles.slice(
+  const displayedProfiles = sortedProfiles.slice(
     startIdx,
     startIdx + PROFILES_PER_PAGE,
   );
+
+  // Reset to page 1 when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy, filterLocation, setCurrentPage]);
 
   return (
     <div className="max-w-7xl mx-auto px-2 py-4">
@@ -47,14 +102,76 @@ export const ProfileGrid = ({
         </div>
       </div>
 
+      {/* Filter & Sort Bar */}
+      <div className="bg-white rounded-lg p-3 shadow-sm mb-4 flex flex-wrap gap-3 items-center justify-between">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-sm font-bold text-gray-700">Sort by:</span>
+          <button
+            onClick={() => setSortBy("online")}
+            className={`px-3 py-1 rounded text-sm font-semibold transition ${
+              sortBy === "online"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Online First
+          </button>
+          <button
+            onClick={() => setSortBy("age")}
+            className={`px-3 py-1 rounded text-sm font-semibold transition ${
+              sortBy === "age"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Age
+          </button>
+          <button
+            onClick={() => setSortBy("location")}
+            className={`px-3 py-1 rounded text-sm font-semibold transition ${
+              sortBy === "location"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Location
+          </button>
+          <button
+            onClick={() => setSortBy("random")}
+            className={`px-3 py-1 rounded text-sm font-semibold transition ${
+              sortBy === "random"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Random
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-gray-700">Location:</span>
+          <select
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            className="px-3 py-1 rounded border border-gray-300 text-sm font-semibold bg-white text-gray-700 hover:border-gray-400 cursor-pointer"
+          >
+            {locations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc === "all" ? "All Locations" : loc}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Models Grid - No Gaps, Large Pictures */}
       {loading ? (
         <div className="text-center py-8">
           <p>Loading models...</p>
         </div>
-      ) : profiles.length === 0 ? (
+      ) : sortedProfiles.length === 0 ? (
         <div className="text-center py-8 bg-white rounded-lg">
-          <p>No models available</p>
+          <p>No models match your filters</p>
         </div>
       ) : (
         <>
